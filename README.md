@@ -6,7 +6,7 @@
 [![TypeScript](https://img.shields.io/badge/Language-TypeScript_5.8-3178C6.svg?logo=typescript&logoColor=white)](https://www.typescriptlang.org)
 [![Vite](https://img.shields.io/badge/Bundler-Vite_8-646CFF.svg?logo=vite&logoColor=white)](https://vitejs.dev)
 [![Tailwind CSS v4](https://img.shields.io/badge/Styling-Tailwind_v4-38B2AC.svg?logo=tailwind-css&logoColor=white)](https://tailwindcss.com)
-[![Tests](https://img.shields.io/badge/Tests-43_Passed_(31_Pytest_+_12_Vitest)-brightgreen.svg)]()
+[![Tests](<https://img.shields.io/badge/Tests-51_Passed_(39_Pytest_+_12_Vitest)-brightgreen.svg>)](<>)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 > **LinkIntel AI** is a production-ready website intelligence platform that ingests public business websites and transforms live web content into structured competitive intelligence, high-intent search queries, technical SEO audits, core service breakdowns, and buyer persona profiles.
@@ -111,14 +111,17 @@ graph TB
 ## 📡 API Specification
 
 ### `POST /link-analysis`
+
 Analyzes a submitted business website and returns structured intelligence.
 
 #### Request Headers
+
 ```http
 Content-Type: application/json
 ```
 
 #### Request Body
+
 ```json
 {
   "url": "https://stripe.com"
@@ -126,6 +129,7 @@ Content-Type: application/json
 ```
 
 #### Response Contract (`200 OK`)
+
 ```json
 {
   "success": true,
@@ -141,8 +145,14 @@ Content-Type: application/json
         {
           "name": "Adyen",
           "category": "Global Omnichannel Payment Processing",
-          "strengths": ["Single platform for in-store and online payments", "Direct global settlement"],
-          "weaknesses": ["Higher minimum transaction thresholds", "Less developer-centric onboarding"],
+          "strengths": [
+            "Single platform for in-store and online payments",
+            "Direct global settlement"
+          ],
+          "weaknesses": [
+            "Higher minimum transaction thresholds",
+            "Less developer-centric onboarding"
+          ],
           "differentiation": "Adyen focuses on unified point-of-sale for multinational retail, while Stripe dominates developer-first internet commerce."
         }
       ],
@@ -182,12 +192,32 @@ Content-Type: application/json
     ],
     "seo_improvements": {
       "technical_signals": [
-        { "name": "Title tag", "status": "present", "details": "Descriptive, brand-anchored title tag found." },
-        { "name": "Meta description", "status": "present", "details": "High-clarity meta description present." },
+        {
+          "name": "Title tag",
+          "status": "present",
+          "details": "Descriptive, brand-anchored title tag found."
+        },
+        {
+          "name": "Meta description",
+          "status": "present",
+          "details": "High-clarity meta description present."
+        },
         { "name": "H1 heading", "status": "present", "details": "Single clear H1 heading found." },
-        { "name": "Canonical URL", "status": "present", "details": "Self-referential canonical URL configured." },
-        { "name": "Open Graph", "status": "present", "details": "Complete Open Graph social tags configured." },
-        { "name": "Structured data", "status": "present", "details": "Schema.org Organization JSON-LD found." }
+        {
+          "name": "Canonical URL",
+          "status": "present",
+          "details": "Self-referential canonical URL configured."
+        },
+        {
+          "name": "Open Graph",
+          "status": "present",
+          "details": "Complete Open Graph social tags configured."
+        },
+        {
+          "name": "Structured data",
+          "status": "present",
+          "details": "Schema.org Organization JSON-LD found."
+        }
       ],
       "recommendations": [
         {
@@ -237,27 +267,46 @@ Content-Type: application/json
 ---
 
 ### `GET /health`
-Liveness and readiness probe for load balancers and orchestrators.
+
+Liveness probe for load balancers and orchestrators.
 
 #### Response (`200 OK`)
+
 ```json
 {
-  "status": "ok",
-  "timestamp": "2026-11-18T22:00:00.000000Z",
+  "status": "ok"
+}
+```
+
+### `GET /health/ready`
+
+Deep readiness probe checking AI provider key presence, search provider status, and model configuration without exposing secrets.
+
+#### Response (`200 OK`)
+
+```json
+{
+  "status": "ready",
+  "service": "linkintel-backend",
   "version": "1.0.0",
-  "service": "LinkIntel AI",
-  "environment": "production",
-  "llm_provider": "gemini",
-  "model_name": "gemini-2.5-flash"
+  "provider": "gemini",
+  "model": "gemini-2.5-flash",
+  "provider_key_present": true,
+  "search_provider_configured": true,
+  "warnings": []
 }
 ```
 
 ### Interactive API Docs (`/docs`)
+
 FastAPI provides automatic interactive Swagger UI documentation at:
+
 ```
 http://localhost:4000/docs
 ```
+
 And alternative ReDoc documentation at:
+
 ```
 http://localhost:4000/redoc
 ```
@@ -267,6 +316,7 @@ http://localhost:4000/redoc
 ## 🚀 Quick Start Guide
 
 ### Prerequisites
+
 - **Python 3.10+**
 - **Node.js 20+** and **pnpm** (or npm/bun)
 - (Optional) **Google Gemini API Key** or **OpenAI API Key**
@@ -298,6 +348,7 @@ uvicorn app.main:app --host 0.0.0.0 --port 4000 --reload
 ```
 
 The backend is now live at `http://localhost:4000`. Test it with:
+
 ```bash
 curl http://localhost:4000/health
 ```
@@ -342,46 +393,66 @@ docker run -d \
 
 The repository features comprehensive automated test coverage across both frontend and backend stacks.
 
-### Run Backend Pytest Suite (31 Tests)
+### Run Backend Pytest Suite (39 Tests)
+
 ```bash
-# Runs URL validation, SSRF defense, DNS resolver, HTML parsing, SEO service, and API tests
+# Runs URL validation, SSRF connection pinning, DNS resolver, config resolution, HTML parsing, SEO service, and API tests
 python -m pytest backend/tests -v
 ```
-**Result:** `31 passed in 0.72s` (100% pass rate)
+
+**Result:** `39 passed in 1.53s` (100% pass rate)
+
+### Run Environment Diagnostics
+
+```bash
+# Verifies .env resolution and provider readiness without leaking credentials
+python backend/app/config.py
+```
 
 ### Run Frontend Vitest Suite (12 Tests)
+
 ```bash
 pnpm run test
 ```
-**Result:** `12 passed in 2.91s` (100% pass rate)
+
+**Result:** `12 passed in 2.29s` (100% pass rate)
+
+### Total Automated Tests
+
+```text
+39 Backend Pytest Tests + 12 Frontend Vitest Tests = 51 Passing Automated Tests
+```
 
 ### Run Frontend Linting & Formatting
+
 ```bash
 pnpm run lint
 pnpm run format
 ```
 
 ### Run Frontend Production Build
+
 ```bash
 pnpm run build
 ```
+
 Generates client assets, SSR bundles, and Nitro server output cleanly with 0 errors.
 
 ---
 
 ## 💰 LLM Model Comparison & Cost Economics
 
-*This research satisfies the 15-mark requirement for LLM Comparison and Cost Optimization Research in the Dxora Practical Test.*
+_This research satisfies the 15-mark requirement for LLM Comparison and Cost Optimization Research in the Dxora Practical Test._
 
-| Dimension | Google Gemini 2.5 Flash (Primary) | OpenAI GPT-4o mini (Standby) | Anthropic Claude 3.5 Haiku (Deep Dive) |
-| :--- | :--- | :--- | :--- |
-| **Input Price (per 1M tokens)** | **\$0.075** | \$0.150 | \$0.800 |
-| **Output Price (per 1M tokens)** | **\$0.300** | \$0.600 | \$4.000 |
-| **Context Window** | **1,048,576 tokens** | 128,000 tokens | 200,000 tokens |
-| **Inference Latency** | **~1.2 – 1.8s** | ~1.8 – 2.4s | ~2.1 – 2.9s |
-| **Cost per 1,000 Analyses** | **\$0.62** | **\$1.25** | **\$7.60** |
-| **Schema Parse Failure Rate** | **0.0%** (Pydantic schema mode) | **0.0%** (Strict JSON) | 0.8% |
-| **Monthly Cost at 10,000 scans/day** | **\$186.00 / mo** | \$375.00 / mo | \$2,280.00 / mo |
+| Dimension                            | Google Gemini 2.5 Flash (Primary) | OpenAI GPT-4o mini (Standby) | Anthropic Claude 3.5 Haiku (Deep Dive) |
+| :----------------------------------- | :-------------------------------- | :--------------------------- | :------------------------------------- |
+| **Input Price (per 1M tokens)**      | **\$0.075**                       | \$0.150                      | \$0.800                                |
+| **Output Price (per 1M tokens)**     | **\$0.300**                       | \$0.600                      | \$4.000                                |
+| **Context Window**                   | **1,048,576 tokens**              | 128,000 tokens               | 200,000 tokens                         |
+| **Inference Latency**                | **~1.2 – 1.8s**                   | ~1.8 – 2.4s                  | ~2.1 – 2.9s                            |
+| **Cost per 1,000 Analyses**          | **\$0.62**                        | **\$1.25**                   | **\$7.60**                             |
+| **Schema Parse Failure Rate**        | **0.0%** (Pydantic schema mode)   | **0.0%** (Strict JSON)       | 0.8%                                   |
+| **Monthly Cost at 10,000 scans/day** | **\$186.00 / mo**                 | \$375.00 / mo                | \$2,280.00 / mo                        |
 
 > **Comprehensive Research Document:** Read the complete 15-mark research analysis in [`backend/docs/llm-research.md`](backend/docs/llm-research.md).
 

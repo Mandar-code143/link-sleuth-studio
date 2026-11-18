@@ -50,6 +50,7 @@ import { Button } from "@/components/ui/button";
 import {
   analyzeWebsite,
   checkApiHealth,
+  checkApiHealthDetailed,
   DEFAULT_API_BASE_URL,
   deleteReport,
   DEMO_REPORT,
@@ -59,6 +60,7 @@ import {
   savePreferences,
   saveReport,
   validateWebsiteUrl,
+  type ApiHealthStatus,
   type AppPreferences,
   type AudienceProfile,
   type Competitor,
@@ -206,23 +208,40 @@ function Sidebar({ pathname, onClose }: { pathname: string; onClose: () => void 
 function AppShell({ children, title }: { children: ReactNode; title: string }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [preferences] = usePreferences();
-  const [apiOnline, setApiOnline] = useState<boolean | null>(null);
+  const [apiHealth, setApiHealth] = useState<ApiHealthStatus | null>(null);
   const pathname = typeof window === "undefined" ? "/" : window.location.pathname;
   useEffect(() => {
     let current = true;
     if (preferences.mode === "demo") {
-      setApiOnline(null);
+      setApiHealth(null);
       return () => {
         current = false;
       };
     }
-    void checkApiHealth(preferences.apiBaseUrl).then((online) => {
-      if (current) setApiOnline(online);
+    void checkApiHealthDetailed(preferences.apiBaseUrl).then((status) => {
+      if (current) setApiHealth(status);
     });
     return () => {
       current = false;
     };
   }, [preferences.apiBaseUrl, preferences.mode]);
+
+  const badgeClass = useMemo(() => {
+    if (preferences.mode === "demo") return "mode-demo";
+    if (!apiHealth) return "mode-live";
+    if (!apiHealth.reachable) return "mode-live";
+    if (!apiHealth.providerKeyConfigured) return "mode-warning";
+    return "mode-online";
+  }, [preferences.mode, apiHealth]);
+
+  const badgeText = useMemo(() => {
+    if (preferences.mode === "demo") return "Sample mode";
+    if (!apiHealth) return "Checking API...";
+    if (!apiHealth.reachable) return "API unavailable";
+    if (!apiHealth.providerKeyConfigured) return "API key missing";
+    return "API connected";
+  }, [preferences.mode, apiHealth]);
+
   return (
     <div className="app-frame">
       {mobileOpen && (
@@ -253,16 +272,11 @@ function AppShell({ children, title }: { children: ReactNode; title: string }) {
           </div>
           <div className="topbar-right">
             <span
-              className={`mode-badge ${preferences.mode === "demo" ? "mode-demo" : apiOnline ? "mode-online" : "mode-live"}`}
+              className={`mode-badge ${badgeClass}`}
+              title={apiHealth?.errorMessage || undefined}
             >
               <i />
-              {preferences.mode === "demo"
-                ? "Sample mode"
-                : apiOnline
-                  ? "API connected"
-                  : apiOnline === false
-                    ? "API unavailable"
-                    : "Live mode"}
+              {badgeText}
             </span>
             <Link to="/settings" className="topbar-settings" aria-label="Settings">
               <Settings2 size={17} />
@@ -2286,7 +2300,10 @@ export function SettingsPage() {
   const [apiUrl, setApiUrl] = useState(preferences.apiBaseUrl);
   const [saved, setSaved] = useState(false);
   const [testing, setTesting] = useState(false);
-  const [connection, setConnection] = useState<"unknown" | "connected" | "failed">("unknown");
+  const [healthStatus, setHealthStatus] = useState<ApiHealthStatus | null>(null);
+  const [connection, setConnection] = useState<"unknown" | "connected" | "degraded" | "failed">(
+    "unknown",
+  );
   const [copied, setCopied] = useState(false);
   const saveUrl = () => {
     const value = apiUrl.trim().replace(/\/+$/, "");
@@ -2301,8 +2318,15 @@ export function SettingsPage() {
   };
   const testConnection = async () => {
     setTesting(true);
-    const online = await checkApiHealth(apiUrl.trim().replace(/\/+$/, ""));
-    setConnection(online ? "connected" : "failed");
+    const result = await checkApiHealthDetailed(apiUrl.trim().replace(/\/+$/, ""));
+    setHealthStatus(result);
+    if (!result.reachable) {
+      setConnection("failed");
+    } else if (!result.providerKeyConfigured) {
+      setConnection("degraded");
+    } else {
+      setConnection("connected");
+    }
     setTesting(false);
   };
   return (
@@ -2394,6 +2418,7 @@ export function SettingsPage() {
                 onChange={(event) => {
                   setApiUrl(event.target.value);
                   setConnection("unknown");
+                  setHealthStatus(null);
                 }}
                 placeholder={DEFAULT_API_BASE_URL}
               />
@@ -2411,12 +2436,17 @@ export function SettingsPage() {
                 {connection === "connected" ? (
                   <>
                     <CircleCheck size={14} />
-                    API responded at /health
+                    Backend online &amp; AI provider ready
+                  </>
+                ) : connection === "degraded" ? (
+                  <>
+                    <CircleAlert size={14} />
+                    Backend online, but AI provider key is not configured in backend/.env
                   </>
                 ) : connection === "failed" ? (
                   <>
                     <CircleAlert size={14} />
-                    Could not reach this API address
+                    {healthStatus?.errorMessage || "Could not reach this API address"}
                   </>
                 ) : (
                   <>
@@ -2438,6 +2468,42 @@ export function SettingsPage() {
                 )}
               </Button>
             </div>
+
+            {healthStatus?.reachable && (
+              <div className="backend-status-card">
+                <div className="status-row">
+                  <span>Backend service:</span>
+                  <span className="status-val">
+                    {healthStatus.service || "linkintel-backend"} v{healthStatus.version || "1.0.0"}
+                  </span>
+                </div>
+                <div className="status-row">
+                  <span>AI Provider:</span>
+                  <span className="status-val">
+                    {healthStatus.provider || "gemini"} ({healthStatus.model || "gemini-2.5-flash"})
+                  </span>
+                </div>
+                <div className="status-row">
+                  <span>Provider API Key:</span>
+                  <span
+                    className="status-val"
+                    style={{ color: healthStatus.providerKeyConfigured ? "#059669" : "#d97706" }}
+                  >
+                    {healthStatus.providerKeyConfigured
+                      ? "Detected & Configured"
+                      : "Missing from backend .env"}
+                  </span>
+                </div>
+                <div className="status-row">
+                  <span>Live Search Discovery:</span>
+                  <span className="status-val">
+                    {healthStatus.searchProviderConfigured
+                      ? "DuckDuckGo / Live Search Active"
+                      : "Aggregator Filter Active"}
+                  </span>
+                </div>
+              </div>
+            )}
           </section>
           <section className="settings-panel">
             <div className="settings-panel-heading">

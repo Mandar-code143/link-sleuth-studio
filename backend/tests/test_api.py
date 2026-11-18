@@ -5,6 +5,8 @@ from unittest.mock import patch, AsyncMock
 from fastapi.testclient import TestClient
 
 from app.main import app
+from app.api import routes
+from app.services.analysis_service import MockProvider
 from app.services.website_extractor import WebsiteExtraction
 
 client = TestClient(app)
@@ -14,6 +16,16 @@ def test_health_check_endpoint():
     response = client.get("/health")
     assert response.status_code == 200
     assert response.json() == {"status": "ok"}
+
+
+def test_health_ready_endpoint():
+    response = client.get("/health/ready")
+    assert response.status_code == 200
+    data = response.json()
+    assert "status" in data
+    assert "provider" in data
+    assert "provider_key_present" in data
+    assert "search_provider_configured" in data
 
 
 def test_openapi_docs_endpoint():
@@ -67,7 +79,8 @@ def test_link_analysis_successful_flow():
         extraction_warnings=[],
     )
 
-    with patch("app.api.routes.extractor.extract", new_callable=AsyncMock) as mock_extract:
+    with patch("app.api.routes.extractor.extract", new_callable=AsyncMock) as mock_extract, \
+         patch.object(routes.analyzer, "provider", MockProvider()):
         mock_extract.return_value = mock_extraction
 
         response = client.post("/link-analysis", json={"url": "https://acme-cloud-solutions.com"})
@@ -94,3 +107,39 @@ def test_link_analysis_successful_flow():
         assert "metadata" in data
         assert data["metadata"]["report_id"]
         assert data["metadata"]["sample_data"] is False
+
+
+def test_link_analysis_aborts_honestly_when_no_api_key():
+    from app.utils.cache import analysis_cache
+    analysis_cache.clear()
+
+    mock_extraction = WebsiteExtraction(
+        requested_url="https://no-key-test.example.com",
+        final_url="https://no-key-test.example.com",
+        domain="no-key-test.example.com",
+        title="No Key Test",
+        meta_description="Enterprise cloud architecture.",
+        headings=[],
+        main_content="No key test cloud engineering.",
+        internal_pages=[],
+        canonical_url="https://no-key-test.example.com",
+        language="en",
+        structured_data=[],
+        open_graph={},
+        meta_robots=None,
+        extraction_warnings=[],
+    )
+
+    from app.providers.gemini import GeminiProvider
+    unconfigured_provider = GeminiProvider(api_key=None)
+
+    with patch("app.api.routes.extractor.extract", new_callable=AsyncMock) as mock_extract, \
+         patch.object(routes.analyzer, "provider", unconfigured_provider):
+        mock_extract.return_value = mock_extraction
+
+        response = client.post("/link-analysis", json={"url": "https://no-key-test.example.com"})
+
+        assert response.status_code == 503
+        data = response.json()
+        assert data["success"] is False
+        assert data["error"]["code"] == "AI_PROVIDER_NOT_CONFIGURED"

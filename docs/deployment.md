@@ -1,13 +1,14 @@
 # LinkIntel AI Production Deployment Guide
 
 **Document Version:** 1.0  
-**Target Environments:** Cloud Containers (Docker), PaaS (Render / Railway / Fly.io / AWS ECS), Serverless Edge (Vercel / Cloudflare Pages / Netlify)  
+**Target Environments:** Cloud Containers (Docker), PaaS (Render / Railway / Fly.io / AWS ECS), Serverless Edge (Vercel / Cloudflare Pages / Netlify)
 
 ---
 
 ## 1. Architecture & Deployment Topology
 
 LinkIntel AI is designed to deploy cleanly as two decoupled services:
+
 1. **Backend Service:** FastAPI Python application running inside a lightweight Docker container or Python 3.10+ runtime, handling SSRF-protected link fetching and LLM orchestration.
 2. **Frontend Service:** TanStack Start React 19 application built via Vite and Nitro, deploying to edge networks (Vercel, Cloudflare, Netlify) or containerized with Node.js.
 
@@ -26,26 +27,26 @@ flowchart LR
 
 ### 2.1 Backend Environment Variables (`backend/.env`)
 
-| Variable Name | Required? | Default Value | Description |
-| :--- | :--- | :--- | :--- |
-| `GEMINI_API_KEY` | **Yes** (if provider=gemini) | `""` | Google Gemini API key from AI Studio |
-| `OPENAI_API_KEY` | Optional | `""` | OpenAI API key for `gpt-4o-mini` fallback |
-| `ANTHROPIC_API_KEY` | Optional | `""` | Anthropic API key for `claude-3-5-haiku` |
-| `LLM_PROVIDER` | No | `"gemini"` | Active provider: `gemini`, `openai`, `anthropic`, or `mock` |
-| `GEMINI_MODEL` | No | `"gemini-2.5-flash"` | Gemini model identifier |
-| `OPENAI_MODEL` | No | `"gpt-4o-mini"` | OpenAI model identifier |
-| `PORT` | No | `4000` | Local or container listener port |
-| `HOST` | No | `"0.0.0.0"` | Network binding interface |
-| `CORS_ORIGINS` | No | `http://localhost:3000,http://localhost:5173` | Comma-separated list of permitted frontend origins |
-| `CACHE_TTL_SECONDS`| No | `3600` | In-memory cache duration for audited websites (1 hour) |
-| `MAX_CONTENT_BYTES`| No | `5242880` | Maximum response payload size for web extraction (5 MB) |
-| `ENVIRONMENT` | No | `"production"` | Environment mode: `production` or `development` |
+| Variable Name       | Required?                    | Default Value                                 | Description                                                 |
+| :------------------ | :--------------------------- | :-------------------------------------------- | :---------------------------------------------------------- |
+| `GEMINI_API_KEY`    | **Yes** (if provider=gemini) | `""`                                          | Google Gemini API key from AI Studio                        |
+| `OPENAI_API_KEY`    | Optional                     | `""`                                          | OpenAI API key for `gpt-4o-mini` fallback                   |
+| `ANTHROPIC_API_KEY` | Optional                     | `""`                                          | Anthropic API key for `claude-3-5-haiku`                    |
+| `LLM_PROVIDER`      | No                           | `"gemini"`                                    | Active provider: `gemini`, `openai`, `anthropic`, or `mock` |
+| `GEMINI_MODEL`      | No                           | `"gemini-2.5-flash"`                          | Gemini model identifier                                     |
+| `OPENAI_MODEL`      | No                           | `"gpt-4o-mini"`                               | OpenAI model identifier                                     |
+| `PORT`              | No                           | `4000`                                        | Local or container listener port                            |
+| `HOST`              | No                           | `"0.0.0.0"`                                   | Network binding interface                                   |
+| `CORS_ORIGINS`      | No                           | `http://localhost:3000,http://localhost:5173` | Comma-separated list of permitted frontend origins          |
+| `CACHE_TTL_SECONDS` | No                           | `3600`                                        | In-memory cache duration for audited websites (1 hour)      |
+| `MAX_CONTENT_BYTES` | No                           | `5242880`                                     | Maximum response payload size for web extraction (5 MB)     |
+| `ENVIRONMENT`       | No                           | `"production"`                                | Environment mode: `production` or `development`             |
 
 ### 2.2 Frontend Environment Variables (`.env.production`)
 
-| Variable Name | Required? | Default Value | Description |
-| :--- | :--- | :--- | :--- |
-| `VITE_API_BASE_URL` | No | `http://localhost:4000` | Base URL of deployed FastAPI backend service |
+| Variable Name       | Required? | Default Value           | Description                                  |
+| :------------------ | :-------- | :---------------------- | :------------------------------------------- |
+| `VITE_API_BASE_URL` | No        | `http://localhost:4000` | Base URL of deployed FastAPI backend service |
 
 ---
 
@@ -54,6 +55,7 @@ flowchart LR
 The repository provides a production multi-stage Dockerfile located at `backend/Dockerfile`.
 
 ### 3.1 Build & Run Locally with Docker
+
 ```bash
 # 1. Build Docker image
 docker build -t linkintel-backend:latest -f backend/Dockerfile backend
@@ -69,6 +71,7 @@ docker run -d \
 ```
 
 ### 3.2 Verify Running Container
+
 ```bash
 # Health check
 curl -f http://localhost:4000/health
@@ -83,6 +86,7 @@ curl -f http://localhost:4000/health
 ## 4. Cloud Platform Deployment Recipes
 
 ### 4.1 Deploying Backend to Render.com
+
 1. Create a **New Web Service** connected to your GitHub repository.
 2. Set **Root Directory** to `backend`.
 3. Set **Runtime** to `Python 3`.
@@ -101,6 +105,7 @@ curl -f http://localhost:4000/health
 7. Set Health Check path to `/health`.
 
 ### 4.2 Deploying Backend to Railway.app
+
 1. From the Railway dashboard, select **Deploy from GitHub repo**.
 2. Set root directory to `/backend`.
 3. Railway automatically detects `backend/Dockerfile`.
@@ -108,9 +113,11 @@ curl -f http://localhost:4000/health
 5. Configure public networking domain and port `4000`.
 
 ### 4.3 Deploying Frontend to Vercel / Cloudflare Pages
+
 The frontend uses standard Vite and TanStack Start Nitro output.
 
 #### Deploy via Vercel:
+
 1. Connect your repository to Vercel.
 2. Root directory: `./` (root).
 3. Framework Preset: **Other / Vite**.

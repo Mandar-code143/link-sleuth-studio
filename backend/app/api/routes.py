@@ -1,17 +1,18 @@
-"""API routes for LinkIntel AI."""
+"""API routes for LinkIntel AI with health diagnostics and structured error handling."""
 
 import time
 import uuid
 from fastapi import APIRouter, HTTPException, status
 from fastapi.responses import JSONResponse
 
+from ..config import settings
 from ..schemas.request import LinkAnalysisRequest
 from ..schemas.response import LinkAnalysisResponse
 from ..security.url_validator import validate_and_normalize_url, URLValidationError
 from ..security.safe_fetcher import SafeFetchError
 from ..security.dns_validator import SSRFSecurityError
 from ..services.website_extractor import WebsiteExtractor
-from ..services.analysis_service import AnalysisService
+from ..services.analysis_service import AnalysisService, AnalysisServiceError
 from ..services.cost_service import calculate_analysis_cost
 from ..utils.cache import analysis_cache
 from ..utils.logging import log_event
@@ -23,13 +24,45 @@ analyzer = AnalysisService()
 
 @router.get(
     "/health",
-    summary="Health check",
+    summary="Liveness check",
     tags=["System"],
     response_model=dict,
 )
 async def health_check() -> dict:
-    """Returns service availability status."""
+    """Returns basic service reachability status."""
     return {"status": "ok"}
+
+
+@router.get(
+    "/health/ready",
+    summary="Readiness check",
+    tags=["System"],
+    response_model=dict,
+)
+async def readiness_check() -> dict:
+    """
+    Returns deep backend readiness including provider configuration status.
+    Never exposes API keys or private configuration values.
+    """
+    key_present = False
+    if settings.llm_provider == "gemini":
+        key_present = settings.is_gemini_configured
+    elif settings.llm_provider == "openai":
+        key_present = bool(settings.openai_api_key)
+    elif settings.llm_provider == "anthropic":
+        key_present = bool(settings.anthropic_api_key)
+    elif settings.llm_provider == "mock":
+        key_present = True
+
+    return {
+        "status": "ready" if key_present else "degraded",
+        "provider": settings.llm_provider,
+        "model": settings.llm_model,
+        "provider_key_present": key_present,
+        "search_provider": settings.search_provider,
+        "search_provider_configured": settings.is_search_configured,
+        "app_env": settings.app_env,
+    }
 
 
 @router.post(
@@ -39,7 +72,7 @@ async def health_check() -> dict:
     response_model=LinkAnalysisResponse,
     status_code=status.HTTP_200_OK,
 )
-async def analyze_link(request: LinkAnalysisRequest) -> LinkAnalysisResponse:
+async def analyze_link(request: LinkAnalysisRequest):
     """
     Analyzes a submitted business website and returns five structured dimensions of
     business intelligence, competitor comparisons, search queries, SEO, and audience profiles.
@@ -54,13 +87,21 @@ async def analyze_link(request: LinkAnalysisRequest) -> LinkAnalysisResponse:
         normalized_url, hostname, port = validate_and_normalize_url(request.url)
     except URLValidationError as e:
         log_event("validation_error", request_id=request_id, error=str(e))
-        raise HTTPException(
+        return JSONResponse(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Invalid URL: {e}",
+            content={
+                "success": False,
+                "error": {
+                    "code": "INVALID_URL",
+                    "message": str(e),
+                },
+                "request_id": request_id,
+            },
         )
 
-    # 2. Cache Lookup
-    cached_response = analysis_cache.get(normalized_url)
+    # 2. Cache Lookup (model-aware key)
+    cache_key = f"{normalized_url}::{settings.llm_provider}::{settings.llm_model}"
+    cached_response = analysis_cache.get(cache_key)
     if cached_response:
         log_event("cache_hit", request_id=request_id, normalized_url=normalized_url)
         return cached_response
@@ -77,21 +118,42 @@ async def analyze_link(request: LinkAnalysisRequest) -> LinkAnalysisResponse:
         )
     except (SSRFSecurityError, URLValidationError) as e:
         log_event("security_blocked", request_id=request_id, error=str(e))
-        raise HTTPException(
+        return JSONResponse(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Security policy blocked request: {e}",
+            content={
+                "success": False,
+                "error": {
+                    "code": "SECURITY_POLICY_VIOLATION",
+                    "message": f"Security policy blocked request: {e}",
+                },
+                "request_id": request_id,
+            },
         )
     except SafeFetchError as e:
         log_event("fetch_failed", request_id=request_id, error=str(e))
-        raise HTTPException(
+        return JSONResponse(
             status_code=status.HTTP_502_BAD_GATEWAY,
-            detail=f"Could not safely fetch website content: {e}",
+            content={
+                "success": False,
+                "error": {
+                    "code": "FETCH_FAILED",
+                    "message": f"Could not safely fetch website content: {e}",
+                },
+                "request_id": request_id,
+            },
         )
     except Exception as e:
         log_event("unexpected_fetch_error", request_id=request_id, error=str(e))
-        raise HTTPException(
+        return JSONResponse(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Internal extraction error: {e}",
+            content={
+                "success": False,
+                "error": {
+                    "code": "INTERNAL_EXTRACTION_ERROR",
+                    "message": "An error occurred while extracting the target website.",
+                },
+                "request_id": request_id,
+            },
         )
 
     # 4. Intelligence Generation
@@ -116,14 +178,34 @@ async def analyze_link(request: LinkAnalysisRequest) -> LinkAnalysisResponse:
             latency_s=round(total_latency, 2),
         )
 
-        # Cache successful analysis
-        analysis_cache.set(normalized_url, analysis_response)
+        # Cache successful analysis ONLY (never cache errors)
+        analysis_cache.set(cache_key, analysis_response)
 
         return analysis_response
 
+    except AnalysisServiceError as e:
+        log_event("analysis_service_error", request_id=request_id, error_code=e.error_code, error=e.message)
+        return JSONResponse(
+            status_code=e.status_code,
+            content={
+                "success": False,
+                "error": {
+                    "code": e.error_code,
+                    "message": e.message,
+                },
+                "request_id": request_id,
+            },
+        )
     except Exception as e:
-        log_event("analysis_failed", request_id=request_id, error=str(e))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to generate website intelligence report: {e}",
+        log_event("analysis_unhandled_failure", request_id=request_id, error=str(e))
+        return JSONResponse(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            content={
+                "success": False,
+                "error": {
+                    "code": "AI_SYNTHESIS_FAILED",
+                    "message": f"Failed to generate website intelligence: {e}",
+                },
+                "request_id": request_id,
+            },
         )

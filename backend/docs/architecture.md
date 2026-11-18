@@ -2,7 +2,7 @@
 
 **Document Version:** 1.0  
 **Status:** Implemented & Production Ready  
-**Repository:** `link-sleuth-studio` → `LinkIntel AI`  
+**Repository:** `link-sleuth-studio` → `LinkIntel AI`
 
 ---
 
@@ -58,6 +58,7 @@ graph TB
 ## 2. Frontend Layer (`src/`)
 
 ### 2.1 Framework & Core Dependencies
+
 - **React 19 & TypeScript:** State-of-the-art type-safe user interface components.
 - **Vite 8 & TanStack Start:** Modern SSR and client bundling with Nitro cloud deployment presets.
 - **TanStack Router:** Type-safe, file-based routing architecture (`src/routes/` and generated `src/routeTree.gen.ts`).
@@ -65,6 +66,7 @@ graph TB
 - **Tailwind CSS v4 & shadcn/ui:** Native OKLCH semantic color palette, responsive layout grids, and accessible Radix UI primitives.
 
 ### 2.2 File-Based Route Topology
+
 1. `/` (`src/routes/index.tsx`): Root executive dashboard displaying active system status, recent audits, quick-scan input, and platform capabilities.
 2. `/analyze` (`src/routes/analyze.tsx`): Full website analysis form with real-time domain validation, provider switching, and progress indicators.
 3. `/reports/$id` (`src/routes/reports/$id.tsx`): Interactive 5-tab intelligence report covering Competitors, Search Queries, Technical SEO, Services, and Target Audience.
@@ -108,6 +110,7 @@ sequenceDiagram
 ```
 
 ### 3.2 Key Components
+
 - **`app/security/url_validator.py`:** Pre-flight URL structural validation, scheme enforcement, credential rejection, and local/private TLD filtering.
 - **`app/security/dns_validator.py`:** System DNS resolution verifying all `A` and `AAAA` records against prohibited private/cloud CIDR ranges with a fail-closed policy.
 - **`app/security/safe_fetcher.py`:** Hardened HTTP client with disabled auto-redirects, manual hop verification, loop detection, and 5MB stream capping.
@@ -126,21 +129,21 @@ sequenceDiagram
 
 The backend response model strictly matches the frontend TypeScript interface:
 
-| Field Path | TypeScript Type (`src/lib/linkintel.ts`) | Python Pydantic Model (`backend/app/schemas/`) |
-| :--- | :--- | :--- |
-| `success` | `boolean` | `bool` |
-| `website` | `string` | `HttpUrl` / `str` |
-| `brand.name` | `string` | `str` |
-| `brand.category` | `string` | `str` |
-| `brand.summary` | `string` | `str` |
-| `analysis.competitor_analysis` | `CompetitorAnalysis` | `CompetitorAnalysis` |
-| `analysis.target_search_queries` | `SearchQuery[]` (length: 5) | `List[SearchQuery]` (min: 5, max: 5) |
-| `analysis.seo_improvements` | `SeoImprovements` | `SeoImprovements` |
-| `analysis.top_services` | `ServiceInsight[]` (1-5) | `List[ServiceInsight]` (min: 1, max: 5) |
-| `analysis.target_audience` | `AudienceProfile` | `AudienceProfile` |
-| `metadata.report_id` | `string` | `str` |
-| `metadata.analyzed_at` | `string` | `str` |
-| `metadata.provider_used` | `string` | `str` |
-| `metadata.execution_time_ms`| `number` | `int` |
-| `metadata.estimated_cost_usd`| `number` | `float` |
-| `metadata.sample_data` | `boolean` | `bool` |
+| Field Path                       | TypeScript Type (`src/lib/linkintel.ts`) | Python Pydantic Model (`backend/app/schemas/`) |
+| :------------------------------- | :--------------------------------------- | :--------------------------------------------- |
+| `success`                        | `boolean`                                | `bool`                                         |
+| `website`                        | `string`                                 | `HttpUrl` / `str`                              |
+| `brand.name`                     | `string`                                 | `str`                                          |
+| `brand.category`                 | `string`                                 | `str`                                          |
+| `brand.summary`                  | `string`                                 | `str`                                          |
+| `analysis.competitor_analysis`   | `CompetitorAnalysis`                     | `CompetitorAnalysis`                           |
+| `analysis.target_search_queries` | `SearchQuery[]` (length: 5)              | `List[SearchQuery]` (min: 5, max: 5)           |
+| `analysis.seo_improvements`      | `SeoImprovements`                        | `SeoImprovements`                              |
+| `analysis.top_services`          | `ServiceInsight[]` (1-5)                 | `List[ServiceInsight]` (min: 1, max: 5)        |
+| `analysis.target_audience`       | `AudienceProfile`                        | `AudienceProfile`                              |
+| `metadata.report_id`             | `string`                                 | `str`                                          |
+| `metadata.analyzed_at`           | `string`                                 | `str`                                          |
+| `metadata.provider_used`         | `string`                                 | `str`                                          |
+| `metadata.execution_time_ms`     | `number`                                 | `int`                                          |
+| `metadata.estimated_cost_usd`    | `number`                                 | `float`                                        |
+| `metadata.sample_data`           | `boolean`                                | `bool`                                         |

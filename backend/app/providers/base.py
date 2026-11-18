@@ -20,6 +20,7 @@ class LLMResult(Generic[T]):
     request_id: Optional[str] = None
     raw_response: Optional[str] = None
     error: Optional[str] = None
+    error_code: Optional[str] = None
 
     @property
     def total_tokens(self) -> Optional[int]:

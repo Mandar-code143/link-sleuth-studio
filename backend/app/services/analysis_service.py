@@ -1,6 +1,7 @@
-"""Analysis orchestrator service generating all five business intelligence sections."""
+"""Analysis orchestrator service generating all five business intelligence sections without synthetic fallbacks."""
 
 import datetime
+import logging
 import uuid
 from typing import Optional, Tuple
 from pydantic import BaseModel, Field
@@ -27,10 +28,24 @@ from ..providers.anthropic import AnthropicProvider
 from .website_extractor import WebsiteExtraction
 from .seo_service import inspect_technical_seo
 from .content_cleaner import format_untrusted_context
+from .competitor_service import CompetitorResearchService
+
+logger = logging.getLogger("linkintel.analysis")
+
+
+class AnalysisServiceError(Exception):
+    """Raised when analysis cannot be completed due to missing configuration, provider failure, or invalid response."""
+
+    def __init__(self, message: str, error_code: str = "AI_PROVIDER_ERROR", status_code: int = 502, details: Optional[dict] = None):
+        super().__init__(message)
+        self.message = message
+        self.error_code = error_code
+        self.status_code = status_code
+        self.details = details or {}
 
 
 class LLMAnalysisPayload(BaseModel):
-    """Internal model for structured LLM completion."""
+    """Internal schema for structured LLM completion."""
     brand: Brand
     competitor_analysis: CompetitorAnalysis
     target_search_queries: list[SearchQuery] = Field(..., min_length=5, max_length=5)
@@ -55,10 +70,145 @@ CRITICAL INSTRUCTIONS & ACCURACY BOUNDARIES:
 """
 
 
+class MockProvider(BaseLLMProvider):
+    """Deterministic mock provider strictly for testing and sample verification."""
+
+    def __init__(self):
+        super().__init__(api_key="mock", model_name="mock-engine")
+
+    async def analyze(self, system_prompt: str, user_prompt: str, response_schema):
+        # Extract title or domain from prompt for context-aware mock test data
+        brand_name = "Acme Test Corp"
+        if "Target Website:" in user_prompt:
+            brand_name = user_prompt.split("Target Website:")[1].split()[0].replace("https://", "").replace("http://", "").split(".")[0].capitalize()
+
+        mock_payload = LLMAnalysisPayload(
+            brand=Brand(
+                name=brand_name,
+                category="Digital Software & Cloud Infrastructure",
+                summary=f"{brand_name} delivers enterprise software and scalable cloud services.",
+            ),
+            competitor_analysis=CompetitorAnalysis(
+                overview=f"Competitive landscape for {brand_name} across enterprise cloud software.",
+                competitors=[
+                    Competitor(
+                        name="CloudPeer Pro",
+                        website="https://cloudpeer.example",
+                        category="Enterprise Cloud Services",
+                        description="Global enterprise cloud management and deployment platform.",
+                        strengths=["Extensive enterprise footprint", "Global partner network"],
+                        gaps=["Higher pricing tiers", "Complex deployment cycle"],
+                        positioning=f"Targets legacy enterprises whereas {brand_name} is developer-first.",
+                        opportunity="Differentiate with faster onboarding and transparent self-service pricing.",
+                        evidence="inferred",
+                        source_urls=[],
+                        confidence=0.85,
+                    ),
+                    Competitor(
+                        name="ScaleStack",
+                        website="https://scalestack.example",
+                        category="Scalable Platform Software",
+                        description="Developer-focused hosting and container orchestration service.",
+                        strengths=["Fast time-to-value", "Self-service tier"],
+                        gaps=["Limited multi-cloud support"],
+                        positioning="Focuses on startups, competing on mid-market ease of use.",
+                        opportunity="Highlight multi-cloud resiliency and enterprise compliance features.",
+                        evidence="inferred",
+                        source_urls=[],
+                        confidence=0.80,
+                    ),
+                    Competitor(
+                        name="HyperNode",
+                        website="https://hypernode.example",
+                        category="Infrastructure Technology",
+                        description="Specialized high-performance infrastructure hosting.",
+                        strengths=["Deep hardware acceleration"],
+                        gaps=["Steep learning curve for small teams"],
+                        positioning="Niche performance architecture.",
+                        opportunity="Deliver automated configuration with minimal operational overhead.",
+                        evidence="inferred",
+                        source_urls=[],
+                        confidence=0.75,
+                    ),
+                ],
+                strengths=["Modern API-first developer architecture", "Transparent operational metrics"],
+                weaknesses=["Global field support coverage across emerging markets"],
+                advantages=["API-first architecture", "Faster deployment cycle"],
+                opportunities=["Direct migration incentives for cost-conscious mid-market firms"],
+                evidence=[],
+            ),
+            target_search_queries=[
+                SearchQuery(query=f"{brand_name.lower()} cloud architecture api", platforms=["Google", "LinkedIn"], intent="Commercial", relevance="Direct match for developer platform evaluation.", audience="Chief Technology Officers"),
+                SearchQuery(query="enterprise multi cloud orchestration", platforms=["Google"], intent="Informational", relevance="High-intent research query capturing architects.", audience="Cloud Architects"),
+                SearchQuery(query=f"{brand_name.lower()} pricing subscription", platforms=["Google", "X"], intent="Transactional", relevance="Commercial purchase evaluation query.", audience="Procurement Directors"),
+                SearchQuery(query="best automated cloud deployment tools", platforms=["Google", "LinkedIn"], intent="Commercial", relevance="Comparison query for platform evaluation.", audience="DevOps Engineers"),
+                SearchQuery(query="how to reduce cloud infrastructure spend", platforms=["Google"], intent="Informational", relevance="Problem-aware top-of-funnel search inquiry.", audience="VP of Engineering"),
+            ],
+            seo_improvements=SeoImprovements(
+                primary_keyword=f"{brand_name.lower()} enterprise cloud",
+                secondary_keywords=["cloud architecture", "kubernetes platform", "devops automation"],
+                long_tail_keywords=["how to deploy scalable distributed cloud software", "enterprise api infrastructure solutions"],
+                business_keywords=["cloud consulting", "enterprise software platform"],
+                recommended_title=f"{brand_name} | Enterprise Cloud Infrastructure & APIs",
+                title_reason="Keeps title under 60 characters while placing the primary brand and capability upfront.",
+                recommended_meta_description=f"Discover {brand_name}'s high-performance cloud infrastructure and API tools built for ambitious engineering teams.",
+                business_summary=f"{brand_name} delivers enterprise software and scalable cloud services.",
+                supporting_content=["Cloud migration guide", "Developer API docs", "Benchmark performance comparisons"],
+                technical_findings=[],
+            ),
+            top_services=[
+                ServiceInsight(name="Cloud Platform Architecture", description="Turnkey distributed architecture and infrastructure orchestration.", target_industry="Enterprise Technology", target_customer="Enterprise Engineering Teams", benefit="High scalability and reduced operational overhead.", evidence="extracted"),
+                ServiceInsight(name="API Integrations & SDKs", description="High-throughput REST and streaming APIs for developer platforms.", target_industry="Software Developers", target_customer="Lead Engineers", benefit="Seamless programmatic access and faster time-to-market.", evidence="extracted"),
+                ServiceInsight(name="DevOps Security & Compliance", description="Automated policy enforcement, vulnerability scanning, and audit trails.", target_industry="Fintech & Healthcare", target_customer="Security Directors", benefit="Continuous SOC 2 and ISO compliance posture.", evidence="extracted"),
+            ],
+            target_audience=TargetAudience(
+                primary_audience="Technical executives, Cloud Architects, and Enterprise Engineering Leads",
+                secondary_audience=["Procurement Officers", "DevOps Engineers", "Technical Founders"],
+                industry_segments=["Financial Services", "B2B SaaS", "E-Commerce Infrastructure"],
+                business_types=["Mid-market Software Companies", "High-growth Scaleups", "Enterprise Organizations"],
+                profiles=[
+                    AudienceProfile(
+                        name="The Enterprise Cloud Architect",
+                        business_type="B2B SaaS / Scaleup",
+                        needs=["High-availability architecture", "Automated scaling"],
+                        challenges=["Tool sprawl", "Complex manual deployments"],
+                        services=["Cloud Platform Architecture"],
+                        opportunity="Demonstrate 10x faster provisioning through turnkey templates.",
+                        evidence="inferred",
+                    ),
+                    AudienceProfile(
+                        name="The Security & Compliance Lead",
+                        business_type="Regulated Enterprise",
+                        needs=["Strict audit trails", "Automated compliance checks"],
+                        challenges=["Fragmented access controls", "Slow audit cycles"],
+                        services=["DevOps Security & Compliance"],
+                        opportunity="Offer automated pre-built compliance reporting.",
+                        evidence="inferred",
+                    ),
+                ],
+                geographic_focus=["North America", "Europe", "Global Remote"],
+                needs=["99.99% system reliability", "Developer productivity", "Cost predictability"],
+                challenges=["Slow manual infrastructure provisioning", "Runaway cloud hosting costs"],
+                interests=["Cloud Architecture", "Kubernetes", "DevOps Automation"],
+                marketing_segments=["Cloud architects", "Engineering leaders", "Enterprise procurement"],
+            ),
+        )
+        return LLMResult(
+            data=mock_payload,
+            provider="mock",
+            model="mock-engine",
+            input_tokens=1500,
+            output_tokens=900,
+            latency_seconds=0.1,
+        )
+
+
 def get_llm_provider(provider_name: Optional[str] = None) -> BaseLLMProvider:
     """Factory selecting the active LLM provider adapter based on config."""
     name = (provider_name or settings.llm_provider).lower().strip()
-    if name == "openai":
+    if name == "mock":
+        return MockProvider()
+    elif name == "openai":
         return OpenAIProvider(
             api_key=settings.openai_api_key,
             model_name=settings.llm_model if "gpt" in settings.llm_model else "gpt-4o-mini",
@@ -77,10 +227,14 @@ def get_llm_provider(provider_name: Optional[str] = None) -> BaseLLMProvider:
 
 
 class AnalysisService:
-    """Orchestrates technical SEO inspection and LLM-powered business intelligence."""
+    """Orchestrates technical SEO inspection and LLM-powered business intelligence without fake fallbacks."""
 
-    def __init__(self, provider: Optional[BaseLLMProvider] = None):
+    def __init__(self, provider: Optional[BaseLLMProvider] = None, competitor_service: Optional[CompetitorResearchService] = None):
         self.provider = provider or get_llm_provider()
+        self.competitor_service = competitor_service or CompetitorResearchService(
+            search_provider=settings.search_provider,
+            api_key=settings.search_api_key,
+        )
 
     async def analyze_website(
         self,
@@ -89,10 +243,11 @@ class AnalysisService:
         """
         Executes complete LinkIntel analysis pipeline.
         
-        Returns:
-            Tuple of (LinkAnalysisResponse, LLMResult)
+        Raises:
+            AnalysisServiceError if provider fails, is not configured, or returns invalid data.
+            Never generates synthetic successful reports on live provider failures.
         """
-        # 1. Gather technical SEO findings from raw HTML extraction
+        # 1. Technical SEO inspection from actual HTML
         technical_signals = inspect_technical_seo(extraction)
 
         # 2. Build structured prompt
@@ -121,230 +276,64 @@ Extracted Content:
         now_iso = datetime.datetime.now(datetime.timezone.utc).isoformat()
         report_id = f"rpt-{uuid.uuid4().hex[:12]}"
 
-        # If LLM execution succeeded with structured output
-        if llm_result.data:
-            payload: LLMAnalysisPayload = llm_result.data
+        # 4. Handle provider failures explicitly — NO SYNTHETIC FALLBACK!
+        if not llm_result.data:
+            error_code = llm_result.error_code or "AI_PROVIDER_ERROR"
+            clean_error = llm_result.error or "The configured AI provider was unable to generate a structured analysis."
 
-            # Guarantee factual technical SEO observations from real HTML extraction
-            payload.seo_improvements.technical_findings = technical_signals
-            payload.seo_improvements.current_title = extraction.title
-            payload.seo_improvements.current_meta_description = extraction.meta_description
+            # Map status codes
+            status_code = 502
+            if error_code == "AI_PROVIDER_NOT_CONFIGURED":
+                status_code = 503
+            elif error_code in ("AI_PROVIDER_RATE_LIMITED", "AI_PROVIDER_QUOTA_EXCEEDED"):
+                status_code = 429
+            elif error_code == "AI_PROVIDER_TIMEOUT":
+                status_code = 504
 
-            bundle = AnalysisBundle(
-                competitor_analysis=payload.competitor_analysis,
-                target_search_queries=payload.target_search_queries[:5],
-                seo_improvements=payload.seo_improvements,
-                top_services=payload.top_services[:5],
-                target_audience=payload.target_audience,
+            logger.error(f"Analysis aborted due to provider error [{error_code}]: {clean_error}")
+            raise AnalysisServiceError(
+                message=clean_error,
+                error_code=error_code,
+                status_code=status_code,
+                details={"provider": llm_result.provider, "model": llm_result.model},
             )
 
-            metadata = ReportMetadata(
-                report_id=report_id,
-                analyzed_at=now_iso,
-                page_title=extraction.title,
-                canonical_url=extraction.canonical_url,
-                extraction_warnings=extraction.extraction_warnings,
-                sample_data=False,
-                model=f"{llm_result.provider} ({llm_result.model})",
+        # 5. Assemble structured intelligence from verified model completion
+        payload: LLMAnalysisPayload = llm_result.data
+
+        # Guarantee factual technical SEO findings from actual DOM extraction
+        payload.seo_improvements.technical_findings = technical_signals
+        payload.seo_improvements.current_title = extraction.title
+        payload.seo_improvements.current_meta_description = extraction.meta_description
+
+        # Enrich / classify competitors using live search and on-page text
+        brand_name = payload.brand.name or extraction.domain
+        try:
+            live_competitors = await self.competitor_service.discover_competitors(
+                brand_name=brand_name,
+                category=payload.brand.category or "Software & Technology",
+                services=[s.name for s in payload.top_services],
+                submitted_domain=extraction.domain,
             )
+            if live_competitors:
+                # Merge verified search competitors with LLM inferred competitors
+                existing_names = {c.name.lower() for c in payload.competitor_analysis.competitors}
+                for comp in live_competitors:
+                    if comp.name.lower() not in existing_names:
+                        payload.competitor_analysis.competitors.append(comp)
+        except Exception as e:
+            logger.debug(f"Competitor enrichment skipped: {e}")
 
-            response = LinkAnalysisResponse(
-                success=True,
-                website=extraction.final_url,
-                brand=payload.brand,
-                analysis=bundle,
-                metadata=metadata,
-            )
-
-            return response, llm_result
-
-        # Fallback if no LLM API key configured or LLM failed:
-        # Create an intelligent deterministic baseline grounded strictly in extracted data
-        warnings = list(extraction.extraction_warnings)
-        if llm_result.error:
-            warnings.append(f"AI analysis note: {llm_result.error}")
-
-        brand_name = extraction.title.split("|")[0].split("—")[0].split("-")[0].strip() if extraction.title else extraction.domain
-        summary = (
-            extraction.meta_description
-            or (extraction.main_content[:200] + "...")
-            or f"Website analysis for {extraction.domain}."
-        )
-
-        brand = Brand(
-            name=brand_name,
-            category="Website & Business Services",
-            summary=summary,
-        )
-
-        # Baseline queries
-        queries = [
-            SearchQuery(
-                query=f"{brand_name} solutions",
-                platforms=["Google", "LinkedIn"],
-                intent="Commercial",
-                relevance="Primary brand-intent commercial search term.",
-                audience="Prospective buyers and evaluators",
-            ),
-            SearchQuery(
-                query=f"{brand_name} services overview",
-                platforms=["Google"],
-                intent="Informational",
-                relevance="Discovers key offerings and capabilities.",
-                audience="Industry researchers and clients",
-            ),
-            SearchQuery(
-                query=f"best alternatives to {brand_name}",
-                platforms=["Google", "X"],
-                intent="Commercial",
-                relevance="Competitive comparison query.",
-                audience="Decision makers comparing vendors",
-            ),
-            SearchQuery(
-                query=f"{brand_name} reviews and pricing",
-                platforms=["Google", "LinkedIn"],
-                intent="Transactional",
-                relevance="High-intent transactional evaluation term.",
-                audience="Procurement and founders",
-            ),
-            SearchQuery(
-                query=f"{extraction.domain} customer support",
-                platforms=["Google"],
-                intent="Navigational",
-                relevance="Brand customer service navigation.",
-                audience="Existing customers",
-            ),
-        ]
-
-        # Baseline competitors (clearly labelled inferred)
-        competitors = [
-            Competitor(
-                name=f"Peer Provider — {extraction.domain}",
-                website="https://example.com",
-                category="Industry Peer",
-                description="Market competitor in the same service category.",
-                strengths=["Established presence"],
-                gaps=["Opportunity for differentiation on speed and customer focus"],
-                positioning="Alternative provider",
-                opportunity=f"Position {brand_name} with clearer unique customer value proposition.",
-                evidence="inferred",
-                source_urls=[],
-                confidence=None,
-            ),
-            Competitor(
-                name="Specialist Boutique",
-                website="https://example.com",
-                category="Specialist",
-                description="Boutique alternative offering tailored category services.",
-                strengths=["Specialized niche targeting"],
-                gaps=["Broader scale and flexibility"],
-                positioning="Niche specialist",
-                opportunity="Emphasize end-to-end service coverage.",
-                evidence="inferred",
-                source_urls=[],
-                confidence=None,
-            ),
-            Competitor(
-                name="Enterprise Category Leader",
-                website="https://example.com",
-                category="Enterprise",
-                description="Large-scale player in this industry space.",
-                strengths=["Brand recognition and scale"],
-                gaps=["Higher cost and slower iteration cycles"],
-                positioning="Enterprise standard",
-                opportunity="Compete on agility, direct partner involvement, and cost.",
-                evidence="inferred",
-                source_urls=[],
-                confidence=None,
-            ),
-        ]
-
-        # Extract genuine headings as services if available
-        top_services: list[ServiceInsight] = []
-        for h in extraction.headings:
-            if len(top_services) >= 5:
-                break
-            if len(h["text"]) > 4 and len(h["text"]) < 60:
-                top_services.append(
-                    ServiceInsight(
-                        name=h["text"],
-                        description=f"Service identified from page headings on {extraction.domain}.",
-                        target_industry="Commercial Businesses",
-                        target_customer="Business Clients",
-                        benefit="Grounded in published website headings.",
-                        evidence="extracted",
-                        source=extraction.final_url,
-                    )
-                )
-
-        if not top_services:
-            top_services.append(
-                ServiceInsight(
-                    name="Core Business Service",
-                    description=summary,
-                    target_industry="General Industry",
-                    target_customer="Target Customers",
-                    benefit="Primary service offered on website.",
-                    evidence="extracted",
-                    source=extraction.final_url,
-                )
-            )
-
-        seo = SeoImprovements(
-            primary_keyword=brand_name.lower(),
-            secondary_keywords=[f"{brand_name.lower()} services", f"{extraction.domain} reviews"],
-            long_tail_keywords=[f"how to choose {brand_name.lower()} services"],
-            business_keywords=[brand_name.lower(), "solutions", "services"],
-            current_title=extraction.title,
-            recommended_title=f"{brand_name} | Solutions & Business Intelligence"[:60],
-            title_reason="States the brand name followed by the primary value proposition.",
-            current_meta_description=extraction.meta_description,
-            recommended_meta_description=(
-                f"Explore {brand_name}: " + (extraction.meta_description or summary)
-            )[:155],
-            business_summary=summary,
-            supporting_content=["Service overview page", "Case studies & testimonials", "FAQ section"],
-            technical_findings=technical_signals,
-            search_volume_note="No verified search-volume data available; recommendations are strategy-led.",
-        )
-
-        audience = TargetAudience(
-            primary_audience="Business decision-makers and founders",
-            secondary_audience=["Procurement leads", "End users"],
-            industry_segments=["Technology", "Professional Services"],
-            business_types=["B2B", "Startups", "SMEs"],
-            profiles=[
-                AudienceProfile(
-                    name="The Primary Decision Maker",
-                    business_type="Commercial organization",
-                    needs=["Reliable service delivery", "Transparent pricing", "Measurable outcomes"],
-                    challenges=["Vendor vetting", "Implementation timeline"],
-                    services=[top_services[0].name],
-                    opportunity="Highlight customer outcomes and proven reliability.",
-                    evidence="inferred",
-                )
-            ],
-            geographic_focus=[],
-            needs=["Quality service", "Clear communication"],
-            challenges=["Time constraints", "Budget allocation"],
-            interests=["Business efficiency", "Vendor evaluation"],
-            marketing_segments=["Founders", "Operations Managers"],
-        )
+        # Classify each competitor's provenance rigorously
+        for comp in payload.competitor_analysis.competitors:
+            comp.evidence = self.competitor_service.classify_evidence(comp, extraction.main_content)
 
         bundle = AnalysisBundle(
-            competitor_analysis=CompetitorAnalysis(
-                overview=f"Competitive landscape assessment for {brand_name} based on published website signals.",
-                competitors=competitors,
-                strengths=["Clear online presence", "Published services overview"],
-                weaknesses=["Opportunity to add more distinct customer proof and case studies"],
-                advantages=["Focused offering grounded in direct website capabilities"],
-                opportunities=["Expand clear positioning against higher-priced competitors"],
-                evidence=[extraction.final_url],
-            ),
-            target_search_queries=queries,
-            seo_improvements=seo,
-            top_services=top_services,
-            target_audience=audience,
+            competitor_analysis=payload.competitor_analysis,
+            target_search_queries=payload.target_search_queries[:5],
+            seo_improvements=payload.seo_improvements,
+            top_services=payload.top_services[:5],
+            target_audience=payload.target_audience,
         )
 
         metadata = ReportMetadata(
@@ -352,15 +341,15 @@ Extracted Content:
             analyzed_at=now_iso,
             page_title=extraction.title,
             canonical_url=extraction.canonical_url,
-            extraction_warnings=warnings,
+            extraction_warnings=extraction.extraction_warnings,
             sample_data=False,
-            model=f"{llm_result.provider} (baseline fallback)",
+            model=f"{llm_result.provider} ({llm_result.model})",
         )
 
         response = LinkAnalysisResponse(
             success=True,
             website=extraction.final_url,
-            brand=brand,
+            brand=payload.brand,
             analysis=bundle,
             metadata=metadata,
         )

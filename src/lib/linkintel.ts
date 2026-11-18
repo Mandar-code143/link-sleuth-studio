@@ -459,11 +459,21 @@ export async function analyzeWebsite(
     });
     const payload: unknown = await response.json().catch(() => null);
     if (!response.ok) {
-      const detail =
-        payload && typeof payload === "object" && "detail" in payload
-          ? String(payload.detail)
-          : `The analysis service returned ${response.status}.`;
-      throw new Error(detail);
+      let detailMsg = `The analysis service returned ${response.status}.`;
+      if (payload && typeof payload === "object" && "detail" in payload) {
+        const detail = (payload as { detail: unknown }).detail;
+        if (typeof detail === "string") {
+          detailMsg = detail;
+        } else if (detail && typeof detail === "object") {
+          const det = detail as Record<string, unknown>;
+          if (typeof det.message === "string") {
+            detailMsg = det.error_code ? `[${det.error_code}] ${det.message}` : det.message;
+          } else {
+            detailMsg = JSON.stringify(detail);
+          }
+        }
+      }
+      throw new Error(detailMsg);
     }
     if (
       !payload ||
@@ -491,11 +501,100 @@ export async function analyzeWebsite(
   }
 }
 
-export async function checkApiHealth(apiBaseUrl: string): Promise<boolean> {
+export interface ApiHealthStatus {
+  reachable: boolean;
+  status: "ready" | "degraded" | "healthy" | "offline";
+  service?: string;
+  version?: string;
+  provider?: string;
+  model?: string;
+  providerKeyConfigured?: boolean;
+  searchProviderConfigured?: boolean;
+  warnings?: string[];
+  errorKind?: "connection_refused" | "cors" | "timeout" | "server_error" | "invalid_response";
+  errorMessage?: string;
+}
+
+export async function checkApiHealthDetailed(apiBaseUrl: string): Promise<ApiHealthStatus> {
+  const normalized = apiBaseUrl.trim().replace(/\/+$/, "");
+  const controller = new AbortController();
+  const timer = window.setTimeout(() => controller.abort(), 6000);
   try {
-    const response = await fetch(`${apiBaseUrl}/health`, { signal: AbortSignal.timeout(5000) });
-    return response.ok;
-  } catch {
-    return false;
+    let res = await fetch(`${normalized}/health/ready`, {
+      signal: controller.signal,
+      headers: { Accept: "application/json" },
+    }).catch(() => null);
+
+    if (!res || res.status === 404) {
+      res = await fetch(`${normalized}/health`, {
+        signal: controller.signal,
+        headers: { Accept: "application/json" },
+      }).catch(() => null);
+    }
+
+    if (!res) {
+      return {
+        reachable: false,
+        status: "offline",
+        errorKind: "connection_refused",
+        errorMessage: `Could not reach ${normalized}. Ensure the backend service is running.`,
+      };
+    }
+
+    if (!res.ok && res.status >= 500) {
+      return {
+        reachable: true,
+        status: "offline",
+        errorKind: "server_error",
+        errorMessage: `Backend returned HTTP ${res.status}. Check backend logs.`,
+      };
+    }
+
+    const data = await res.json().catch(() => null);
+    if (!data || typeof data !== "object") {
+      return {
+        reachable: true,
+        status: "offline",
+        errorKind: "invalid_response",
+        errorMessage: "API responded with non-JSON content.",
+      };
+    }
+
+    const payload = data as Record<string, unknown>;
+    const providerKeyConfigured = Boolean(
+      payload.provider_key_present ?? payload.provider_key_configured ?? false,
+    );
+    const searchConfigured = Boolean(payload.search_provider_configured ?? false);
+    const isReady =
+      payload.status === "ready" || (payload.status === "healthy" && providerKeyConfigured);
+
+    return {
+      reachable: true,
+      status: isReady ? "ready" : "degraded",
+      service: typeof payload.service === "string" ? payload.service : undefined,
+      version: typeof payload.version === "string" ? payload.version : undefined,
+      provider: typeof payload.provider === "string" ? payload.provider : undefined,
+      model: typeof payload.model === "string" ? payload.model : undefined,
+      providerKeyConfigured,
+      searchProviderConfigured: searchConfigured,
+      warnings: Array.isArray(payload.warnings) ? (payload.warnings as string[]) : [],
+    };
+  } catch (err) {
+    const isAbort = err instanceof DOMException && err.name === "AbortError";
+    return {
+      reachable: false,
+      status: "offline",
+      errorKind: isAbort ? "timeout" : "connection_refused",
+      errorMessage: isAbort
+        ? `Request timed out reaching ${normalized}.`
+        : `Network error reaching ${normalized}. Check CORS settings or connection.`,
+    };
+  } finally {
+    window.clearTimeout(timer);
   }
+}
+
+export async function checkApiHealth(apiBaseUrl: string): Promise<boolean> {
+  const result = await checkApiHealthDetailed(apiBaseUrl);
+  return result.reachable;
 }

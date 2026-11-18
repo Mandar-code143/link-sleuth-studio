@@ -26,10 +26,11 @@ def create_app() -> FastAPI:
 
     # Configure CORS strictly from environment settings
     origins = settings.parsed_frontend_origins
+    allow_all = "*" in origins or (settings.app_env == "development" and not origins)
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=origins if origins else ["*"],
-        allow_credentials=True if origins and "*" not in origins else False,
+        allow_origins=["*"] if allow_all else origins,
+        allow_credentials=False if allow_all else True,
         allow_methods=["GET", "POST", "OPTIONS"],
         allow_headers=["*"],
     )

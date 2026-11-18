@@ -115,6 +115,9 @@ class TestDNSValidator:
             resolve_and_validate_hostname("metadata.google.internal")
 
 
+from contextlib import asynccontextmanager
+
+
 @pytest.mark.asyncio
 class TestSafeFetcher:
     @patch("app.security.safe_fetcher.resolve_and_validate_hostname")
@@ -122,16 +125,20 @@ class TestSafeFetcher:
         mock_dns.return_value = [("93.184.216.34", 2)]
 
         # Mock HTTP client where hop 1 redirects to localhost
-        async def mock_get(url):
-            if "example.com" in url:
-                return httpx.Response(
+        @asynccontextmanager
+        async def mock_stream(method, url):
+            if "example.com" in str(url):
+                resp = httpx.Response(
                     302,
                     headers={"Location": "http://127.0.0.1:8080/admin"},
                     request=httpx.Request("GET", url),
                 )
-            return httpx.Response(200, text="internal data", request=httpx.Request("GET", url))
+                yield resp
+            else:
+                resp = httpx.Response(200, text="internal data", request=httpx.Request("GET", url))
+                yield resp
 
-        with patch("httpx.AsyncClient.get", side_effect=mock_get):
+        with patch("httpx.AsyncClient.stream", side_effect=mock_stream):
             with pytest.raises(SafeFetchError, match="URL security validation failed|prohibited"):
                 await safe_fetch_url("https://example.com/redirect")
 
@@ -139,13 +146,15 @@ class TestSafeFetcher:
     async def test_redirect_loop_is_detected(self, mock_dns):
         mock_dns.return_value = [("93.184.216.34", 2)]
 
-        async def mock_loop_get(url):
-            return httpx.Response(
+        @asynccontextmanager
+        async def mock_loop_stream(method, url):
+            resp = httpx.Response(
                 301,
                 headers={"Location": "https://example.com/loop"},
                 request=httpx.Request("GET", url),
             )
+            yield resp
 
-        with patch("httpx.AsyncClient.get", side_effect=mock_loop_get):
+        with patch("httpx.AsyncClient.stream", side_effect=mock_loop_stream):
             with pytest.raises(SafeFetchError, match="Redirect loop detected|Exceeded maximum redirect"):
                 await safe_fetch_url("https://example.com/loop")

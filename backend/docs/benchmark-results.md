@@ -2,13 +2,14 @@
 
 **Document Version:** 1.0  
 **Test Date:** November 2026  
-**Benchmarking Protocol:** Standardized 5-Archetype Website Intelligence Test  
+**Benchmarking Protocol:** Standardized 5-Archetype Website Intelligence Test
 
 ---
 
 ## 1. Methodology & Test Boundaries
 
 To assess system throughput, extraction accuracy, and model economics under realistic workloads, LinkIntel AI was tested across five representative business archetypes:
+
 1. **B2B Enterprise SaaS & Fintech** (`https://stripe.com`)
 2. **Global Professional Services & Consulting** (`https://mckinsey.com`)
 3. **E-Commerce Direct-to-Consumer Retail** (`https://allbirds.com`)
@@ -16,6 +17,7 @@ To assess system throughput, extraction accuracy, and model economics under real
 5. **Creative & Digital Engineering Agency** (`https://instrument.com`)
 
 ### Test Protocol
+
 - **Hardware:** Intel Core i7 / AMD Ryzen 8-Core Workstation, 32GB RAM, Windows 11 / Linux container.
 - **Network:** Symmetric gigabit broadband connection.
 - **Backend Pipeline:** Safe fetch (stream-capped) → Trafilatura DOM distillation → SEO signal extraction → LLM synthesis (`gemini-2.5-flash` primary vs `gpt-4o-mini` fallback) → Cost audit.
@@ -25,15 +27,16 @@ To assess system throughput, extraction accuracy, and model economics under real
 
 ## 2. Comprehensive Archetype Benchmark Results
 
-| Archetype & Domain | Page Size (Raw HTML) | Cleaned Text (Words) | Fetch Latency | Extraction & SEO Latency | Gemini 2.5 Flash Latency | Total E2E Duration | Input Tokens | Output Tokens | Total Cost (USD) | Schema Adherence |
-| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **B2B SaaS** (`stripe.com`) | 284 KB | 3,150 words | 310 ms | 145 ms | 1,180 ms | **1,635 ms** | 4,210 | 1,120 | **\$0.000652** | 100% |
-| **Global Consulting** (`mckinsey.com`) | 412 KB | 4,820 words | 420 ms | 185 ms | 1,340 ms | **1,945 ms** | 5,680 | 1,240 | **\$0.000798** | 100% |
-| **D2C E-Commerce** (`allbirds.com`) | 195 KB | 1,890 words | 280 ms | 110 ms | 1,020 ms | **1,410 ms** | 2,750 | 1,080 | **\$0.000530** | 100% |
-| **Local Hospitality** (`tartinebakery.com`) | 88 KB | 940 words | 195 ms | 65 ms | 890 ms | **1,150 ms** | 1,420 | 950 | **\$0.000392** | 100% |
-| **Digital Agency** (`instrument.com`) | 142 KB | 1,460 words | 240 ms | 90 ms | 1,060 ms | **1,390 ms** | 2,110 | 1,090 | **\$0.000485** | 100% |
+| Archetype & Domain                          | Page Size (Raw HTML) | Cleaned Text (Words) | Fetch Latency | Extraction & SEO Latency | Gemini 2.5 Flash Latency | Total E2E Duration | Input Tokens | Output Tokens | Total Cost (USD) | Schema Adherence |
+| :------------------------------------------ | :------------------- | :------------------- | :------------ | :----------------------- | :----------------------- | :----------------- | :----------- | :------------ | :--------------- | :--------------- |
+| **B2B SaaS** (`stripe.com`)                 | 284 KB               | 3,150 words          | 310 ms        | 145 ms                   | 1,180 ms                 | **1,635 ms**       | 4,210        | 1,120         | **\$0.000652**   | 100%             |
+| **Global Consulting** (`mckinsey.com`)      | 412 KB               | 4,820 words          | 420 ms        | 185 ms                   | 1,340 ms                 | **1,945 ms**       | 5,680        | 1,240         | **\$0.000798**   | 100%             |
+| **D2C E-Commerce** (`allbirds.com`)         | 195 KB               | 1,890 words          | 280 ms        | 110 ms                   | 1,020 ms                 | **1,410 ms**       | 2,750        | 1,080         | **\$0.000530**   | 100%             |
+| **Local Hospitality** (`tartinebakery.com`) | 88 KB                | 940 words            | 195 ms        | 65 ms                    | 890 ms                   | **1,150 ms**       | 1,420        | 950           | **\$0.000392**   | 100%             |
+| **Digital Agency** (`instrument.com`)       | 142 KB               | 1,460 words          | 240 ms        | 90 ms                    | 1,060 ms                 | **1,390 ms**       | 2,110        | 1,090         | **\$0.000485**   | 100%             |
 
 **Averages across all 5 Archetypes:**
+
 - **Average Total End-to-End Latency:** **1,506 ms (~1.5 seconds)**
 - **Average Cost per Analysis:** **\$0.000571** (less than 6/100ths of one cent)
 - **JSON Schema Validation Rate:** **100% (5/5 passed strictly without retries)**
@@ -70,10 +73,12 @@ xychart-beta
 ## 4. Analytical Section Quality Observations
 
 ### 1. Competitor Analysis
+
 - **Gemini 2.5 Flash:** Accurately extracted tier-1 direct competitors for all 5 domains (e.g. Adyen/Braintree for Stripe; BCG/Bain for McKinsey; On Running/Rothys for Allbirds). Provided clear differentiation commentary based on extracted copy rather than generic generic descriptions.
 - **Provenance Tagging:** Correctly separated extracted competitors (explicitly referenced in partner or comparison pages) from inferred market competitors.
 
 ### 2. Target Search Queries (Strict 5-Item Array)
+
 - All 5 query objects strictly included `query`, `intent`, and `relevance`.
 - In all 5 test runs, the array length was **exactly 5**, fulfilling test constraints.
 - Intent classification accurately mapped:
@@ -82,14 +87,17 @@ xychart-beta
   - `transactional` for direct signup, purchasing, and pricing queries
 
 ### 3. SEO Improvements
+
 - Deterministic technical signals (`Title tag`, `Meta description`, `H1 heading`, `Canonical URL`, `Open Graph`, `Structured data`) matched actual DOM inspection.
 - AI-generated recommendations provided actionable, prioritized improvements (e.g. adding `SoftwareApplication` schema for SaaS, optimizing `hreflang` for international consulting, adding alt text to catalog images for e-commerce).
 
 ### 4. Top Services (1 to 5 Items)
+
 - Correctly parsed between 3 and 5 core offerings for each business archetype.
 - Each service entry clearly identified the title, descriptive explanation, and intended target audience segment.
 
 ### 5. Target Audience & Personas
+
 - Synthesized high-fidelity audience summaries and granular buyer personas with concrete operational priorities and realistic pain points.
 
 ---
