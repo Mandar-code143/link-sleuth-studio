@@ -139,13 +139,15 @@ export const DEMO_REPORT: LinkAnalysis = {
   },
   analysis: {
     competitor_analysis: {
-      overview: "Illustrative market framing based on the fictional studio profile; suggestions are not verified competitors.",
+      overview:
+        "Illustrative market framing based on the fictional studio profile; suggestions are not verified competitors.",
       competitors: [
         {
           name: "Sample competitor — brand consultancy",
           website: "https://example.com",
           category: "Brand consultancy",
-          description: "A hypothetical positioning example, included only to demonstrate the report format.",
+          description:
+            "A hypothetical positioning example, included only to demonstrate the report format.",
           strengths: ["Clear specialist positioning"],
           gaps: ["No independent source review in demo mode"],
           positioning: "Established strategic partner",
@@ -162,11 +164,41 @@ export const DEMO_REPORT: LinkAnalysis = {
       evidence: [],
     },
     target_search_queries: [
-      { query: "brand strategy for early-stage startups", platforms: ["Google", "LinkedIn"], intent: "Commercial", relevance: "Connects the stated studio offer with a high-intent need.", audience: "Startup founders" },
-      { query: "startup brand identity design studio", platforms: ["Google", "Instagram"], intent: "Service discovery", relevance: "Pairs the intended audience with a core service.", audience: "Early-stage teams" },
-      { query: "how to position a new business", platforms: ["Google", "LinkedIn"], intent: "Informational", relevance: "A useful educational entry point for prospective clients.", audience: "New business owners" },
-      { query: "website design for growing startups", platforms: ["Google", "Instagram"], intent: "Commercial", relevance: "Reflects the digital experience part of the sample offer.", audience: "Startup teams" },
-      { query: "brand messaging workshop for founders", platforms: ["Google", "LinkedIn", "X"], intent: "Transactional", relevance: "A specific service-led query grounded in the sample positioning.", audience: "Startup founders" },
+      {
+        query: "brand strategy for early-stage startups",
+        platforms: ["Google", "LinkedIn"],
+        intent: "Commercial",
+        relevance: "Connects the stated studio offer with a high-intent need.",
+        audience: "Startup founders",
+      },
+      {
+        query: "startup brand identity design studio",
+        platforms: ["Google", "Instagram"],
+        intent: "Service discovery",
+        relevance: "Pairs the intended audience with a core service.",
+        audience: "Early-stage teams",
+      },
+      {
+        query: "how to position a new business",
+        platforms: ["Google", "LinkedIn"],
+        intent: "Informational",
+        relevance: "A useful educational entry point for prospective clients.",
+        audience: "New business owners",
+      },
+      {
+        query: "website design for growing startups",
+        platforms: ["Google", "Instagram"],
+        intent: "Commercial",
+        relevance: "Reflects the digital experience part of the sample offer.",
+        audience: "Startup teams",
+      },
+      {
+        query: "brand messaging workshop for founders",
+        platforms: ["Google", "LinkedIn", "X"],
+        intent: "Transactional",
+        relevance: "A specific service-led query grounded in the sample positioning.",
+        audience: "Startup founders",
+      },
     ],
     seo_improvements: {
       primary_keyword: "brand strategy for startups",
@@ -177,23 +209,82 @@ export const DEMO_REPORT: LinkAnalysis = {
       recommended_title: "Brand Strategy for Startups | Northstar Studio",
       title_reason: "States the audience and service before the studio name.",
       current_meta_description: null,
-      recommended_meta_description: "Build a clearer brand and digital experience with Northstar Studio, a strategy-led creative partner for early-stage teams.",
+      recommended_meta_description:
+        "Build a clearer brand and digital experience with Northstar Studio, a strategy-led creative partner for early-stage teams.",
       business_summary: "Brand strategy and digital design for early-stage teams.",
-      supporting_content: ["Brand strategy service page", "Founder brand-positioning guide", "Frequently asked questions about the studio process"],
+      supporting_content: [
+        "Brand strategy service page",
+        "Founder brand-positioning guide",
+        "Frequently asked questions about the studio process",
+      ],
       technical_findings: [
-        { name: "Title tag", value: null, status: "not_inspected", note: "No website was fetched in demo mode." },
-        { name: "Meta description", value: null, status: "not_inspected", note: "No website was fetched in demo mode." },
-        { name: "H1 heading", value: null, status: "not_inspected", note: "No website was fetched in demo mode." },
-        { name: "Canonical URL", value: null, status: "not_inspected", note: "No website was fetched in demo mode." },
-        { name: "Open Graph", value: null, status: "not_inspected", note: "No website was fetched in demo mode." },
-        { name: "Image alt text", value: null, status: "not_inspected", note: "No website was fetched in demo mode." },
+        {
+          name: "Title tag",
+          value: null,
+          status: "not_inspected",
+          note: "No website was fetched in demo mode.",
+        },
+        {
+          name: "Meta description",
+          value: null,
+          status: "not_inspected",
+          note: "No website was fetched in demo mode.",
+        },
+        {
+          name: "H1 heading",
+          value: null,
+          status: "not_inspected",
+          note: "No website was fetched in demo mode.",
+        },
+        {
+          name: "Canonical URL",
+          value: null,
+          status: "not_inspected",
+          note: "No website was fetched in demo mode.",
+        },
+        {
+          name: "Open Graph",
+          value: null,
+          status: "not_inspected",
+          note: "No website was fetched in demo mode.",
+        },
+        {
+          name: "Image alt text",
+          value: null,
+          status: "not_inspected",
+          note: "No website was fetched in demo mode.",
+        },
       ],
       search_volume_note: "No verified search-volume data available.",
     },
     top_services: [
-      { name: "Brand strategy", description: "A sample strategic engagement to clarify positioning and direction.", target_industry: "Early-stage businesses", target_customer: "Founders", benefit: "A more coherent foundation for growth.", evidence: "inferred", source: null },
-      { name: "Visual identity", description: "A sample identity system aligned to the business strategy.", target_industry: "Early-stage businesses", target_customer: "Growing teams", benefit: "More consistent brand communication.", evidence: "inferred", source: null },
-      { name: "Digital experience design", description: "A sample website design engagement.", target_industry: "Digital-first businesses", target_customer: "Startup teams", benefit: "A clearer online experience.", evidence: "inferred", source: null },
+      {
+        name: "Brand strategy",
+        description: "A sample strategic engagement to clarify positioning and direction.",
+        target_industry: "Early-stage businesses",
+        target_customer: "Founders",
+        benefit: "A more coherent foundation for growth.",
+        evidence: "inferred",
+        source: null,
+      },
+      {
+        name: "Visual identity",
+        description: "A sample identity system aligned to the business strategy.",
+        target_industry: "Early-stage businesses",
+        target_customer: "Growing teams",
+        benefit: "More consistent brand communication.",
+        evidence: "inferred",
+        source: null,
+      },
+      {
+        name: "Digital experience design",
+        description: "A sample website design engagement.",
+        target_industry: "Digital-first businesses",
+        target_customer: "Startup teams",
+        benefit: "A clearer online experience.",
+        evidence: "inferred",
+        source: null,
+      },
     ],
     target_audience: {
       primary_audience: "Founders of early-stage businesses",
@@ -201,14 +292,34 @@ export const DEMO_REPORT: LinkAnalysis = {
       industry_segments: ["Technology", "Professional services"],
       business_types: ["Startups", "Small businesses"],
       profiles: [
-        { name: "The early-stage founder", business_type: "New startup", needs: ["A clear brand position", "A credible first website"], challenges: ["Limited time", "Unclear differentiation"], services: ["Brand strategy", "Visual identity"], opportunity: "Lead with a focused, outcome-oriented discovery offer.", evidence: "inferred" },
-        { name: "The growing product team", business_type: "Digital-first business", needs: ["Consistent brand expression", "A more useful web experience"], challenges: ["Siloed design decisions", "An evolving audience"], services: ["Digital experience design"], opportunity: "Show how strategy and delivery connect.", evidence: "inferred" },
+        {
+          name: "The early-stage founder",
+          business_type: "New startup",
+          needs: ["A clear brand position", "A credible first website"],
+          challenges: ["Limited time", "Unclear differentiation"],
+          services: ["Brand strategy", "Visual identity"],
+          opportunity: "Lead with a focused, outcome-oriented discovery offer.",
+          evidence: "inferred",
+        },
+        {
+          name: "The growing product team",
+          business_type: "Digital-first business",
+          needs: ["Consistent brand expression", "A more useful web experience"],
+          challenges: ["Siloed design decisions", "An evolving audience"],
+          services: ["Digital experience design"],
+          opportunity: "Show how strategy and delivery connect.",
+          evidence: "inferred",
+        },
       ],
       geographic_focus: [],
       needs: ["Clear differentiation", "A credible digital presence"],
       challenges: ["Limited internal resources", "Messaging uncertainty"],
       interests: ["Brand positioning", "Product growth", "Digital design"],
-      marketing_segments: ["Pre-launch founders", "Recently funded teams", "Small businesses refreshing their identity"],
+      marketing_segments: [
+        "Pre-launch founders",
+        "Recently funded teams",
+        "Small businesses refreshing their identity",
+      ],
     },
   },
   metadata: {
@@ -216,7 +327,9 @@ export const DEMO_REPORT: LinkAnalysis = {
     analyzed_at: "2026-11-18T09:00:00.000Z",
     page_title: "Northstar Studio — sample report",
     canonical_url: null,
-    extraction_warnings: ["Sample report only. No external website or competitor was fetched or verified."],
+    extraction_warnings: [
+      "Sample report only. No external website or competitor was fetched or verified.",
+    ],
     sample_data: true,
     model: null,
   },
@@ -238,9 +351,13 @@ export function readHistory(): HistoryEntry[] {
     return parsed.filter((item): item is HistoryEntry => {
       if (!item || typeof item !== "object") return false;
       const value = item as Partial<HistoryEntry>;
-      return typeof value.id === "string" && typeof value.website === "string" &&
-        typeof value.brand === "string" && typeof value.analyzedAt === "string" &&
-        (value.status === "completed" || value.status === "failed");
+      return (
+        typeof value.id === "string" &&
+        typeof value.website === "string" &&
+        typeof value.brand === "string" &&
+        typeof value.analyzedAt === "string" &&
+        (value.status === "completed" || value.status === "failed")
+      );
     });
   } catch {
     return [];
@@ -271,7 +388,7 @@ export function getReport(id: string): LinkAnalysis | null {
   if (!storageAvailable()) return null;
   try {
     const raw = window.localStorage.getItem(`${REPORT_KEY_PREFIX}${id}`);
-    return raw ? JSON.parse(raw) as LinkAnalysis : null;
+    return raw ? (JSON.parse(raw) as LinkAnalysis) : null;
   } catch {
     return null;
   }
@@ -279,7 +396,10 @@ export function getReport(id: string): LinkAnalysis | null {
 
 export function deleteReport(id: string) {
   if (!storageAvailable()) return;
-  window.localStorage.setItem(HISTORY_KEY, JSON.stringify(readHistory().filter((item) => item.id !== id)));
+  window.localStorage.setItem(
+    HISTORY_KEY,
+    JSON.stringify(readHistory().filter((item) => item.id !== id)),
+  );
   window.localStorage.removeItem(`${REPORT_KEY_PREFIX}${id}`);
 }
 
@@ -291,9 +411,10 @@ export function readPreferences(): AppPreferences {
       const prefs = value as Partial<AppPreferences>;
       return {
         mode: prefs.mode === "live" ? "live" : "demo",
-        apiBaseUrl: typeof prefs.apiBaseUrl === "string" && prefs.apiBaseUrl.trim()
-          ? prefs.apiBaseUrl.trim().replace(/\/+$/, "")
-          : DEFAULT_API_BASE_URL,
+        apiBaseUrl:
+          typeof prefs.apiBaseUrl === "string" && prefs.apiBaseUrl.trim()
+            ? prefs.apiBaseUrl.trim().replace(/\/+$/, "")
+            : DEFAULT_API_BASE_URL,
       };
     }
   } catch {
@@ -310,7 +431,8 @@ export function validateWebsiteUrl(value: string): string | null {
   if (!value.trim()) return "Enter a website address to continue.";
   try {
     const url = new URL(value.trim());
-    if (!new Set(["http:", "https:"]).has(url.protocol)) return "Use a website address beginning with http:// or https://.";
+    if (!new Set(["http:", "https:"]).has(url.protocol))
+      return "Use a website address beginning with http:// or https://.";
     if (!url.hostname.includes(".")) return "Enter a complete domain, such as example.com.";
     return null;
   } catch {
@@ -318,7 +440,10 @@ export function validateWebsiteUrl(value: string): string | null {
   }
 }
 
-export async function analyzeWebsite(url: string, preferences: AppPreferences): Promise<LinkAnalysis> {
+export async function analyzeWebsite(
+  url: string,
+  preferences: AppPreferences,
+): Promise<LinkAnalysis> {
   if (preferences.mode === "demo") {
     await new Promise((resolve) => window.setTimeout(resolve, 700));
     return DEMO_REPORT;
@@ -334,12 +459,20 @@ export async function analyzeWebsite(url: string, preferences: AppPreferences): 
     });
     const payload: unknown = await response.json().catch(() => null);
     if (!response.ok) {
-      const detail = payload && typeof payload === "object" && "detail" in payload
-        ? String(payload.detail)
-        : `The analysis service returned ${response.status}.`;
+      const detail =
+        payload && typeof payload === "object" && "detail" in payload
+          ? String(payload.detail)
+          : `The analysis service returned ${response.status}.`;
       throw new Error(detail);
     }
-    if (!payload || typeof payload !== "object" || !("success" in payload) || payload.success !== true || !("analysis" in payload) || !("brand" in payload)) {
+    if (
+      !payload ||
+      typeof payload !== "object" ||
+      !("success" in payload) ||
+      payload.success !== true ||
+      !("analysis" in payload) ||
+      !("brand" in payload)
+    ) {
       throw new Error("The API response did not match the expected report format.");
     }
     return payload as LinkAnalysis;
@@ -348,7 +481,9 @@ export async function analyzeWebsite(url: string, preferences: AppPreferences): 
       throw new Error("The analysis took too long. Check the API service and try again.");
     }
     if (error instanceof TypeError) {
-      throw new Error(`Could not reach the live API at ${preferences.apiBaseUrl}. Check the address and that the Python service is running.`);
+      throw new Error(
+        `Could not reach the live API at ${preferences.apiBaseUrl}. Check the address and that the Python service is running.`,
+      );
     }
     throw error;
   } finally {

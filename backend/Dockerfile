@@ -1,0 +1,23 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Install system dependencies needed for compiling lxml if wheels not available
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc \
+    libxml2-dev \
+    libxslt1-dev \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY . .
+
+EXPOSE 4000
+
+ENV APP_ENV=production
+ENV APP_PORT=4000
+
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "4000"]

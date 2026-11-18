@@ -1,0 +1,223 @@
+{
+  "success": true,
+  "website": "https://stripe.com",
+  "brand": {
+    "name": "Stripe",
+    "category": "Financial Infrastructure & Payments Software",
+    "summary": "Stripe provides modern economic infrastructure for the internet, enabling millions of businesses of all sizes to accept payments, manage subscriptions, automate financial workflows, and scale globally."
+  },
+  "analysis": {
+    "competitor_analysis": {
+      "competitors": [
+        {
+          "name": "Adyen",
+          "category": "Global Omnichannel Payment Processing",
+          "strengths": [
+            "Single platform for global in-store and online payments",
+            "High enterprise transaction volumes and global banking licenses",
+            "Native direct settlement in local currencies"
+          ],
+          "weaknesses": [
+            "Higher minimum volume requirements for smaller merchants",
+            "Less developer-centric onboarding documentation than Stripe",
+            "Limited plug-and-play extensions ecosystem for startups"
+          ],
+          "differentiation": "Adyen prioritizes unified omnichannel point-of-sale and online processing for multinational enterprises, whereas Stripe dominates modern digital API-first developer ecosystems."
+        },
+        {
+          "name": "PayPal Braintree",
+          "category": "Digital Payments & Merchant Services",
+          "strengths": [
+            "Native PayPal and Venmo consumer brand equity",
+            "Mature global checkout coverage",
+            "Established marketplace split-payment capabilities"
+          ],
+          "weaknesses": [
+            "Slower developer iteration velocity on advanced billing tools",
+            "Fragmented backend reporting across legacy PayPal products",
+            "Higher foreign exchange and cross-border settlement fees"
+          ],
+          "differentiation": "Braintree leverages consumer trust via PayPal wallet integration, while Stripe delivers comprehensive end-to-end financial operations (Tax, Radar, Billing, Treasury)."
+        },
+        {
+          "name": "Square (Block)",
+          "category": "Unified POS & Small Business Financial Solutions",
+          "strengths": [
+            "Dominant in-person retail and hospitality hardware ecosystem",
+            "Instant account activation for brick-and-mortar merchants",
+            "Integrated payroll, appointment scheduling, and inventory"
+          ],
+          "weaknesses": [
+            "Less flexible APIs for complex multinational SaaS billing",
+            "Higher rate tiering for custom web checkout implementations",
+            "Limited native international multi-entity compliance"
+          ],
+          "differentiation": "Square excels in physical retail and local business hardware, whereas Stripe targets internet-first software companies and complex cross-border architectures."
+        }
+      ],
+      "market_positioning": "Stripe leads the internet financial infrastructure sector as the gold standard for developer experience, programmability, and modular financial operations.",
+      "competitive_advantages": [
+        "Unrivaled developer APIs, client SDKs, and comprehensive documentation",
+        "Machine learning-powered fraud defense with Stripe Radar",
+        "Comprehensive financial operations stack including Stripe Tax, Billing, Invoicing, and Treasury",
+        "Global multi-currency support with dynamic local payment method presentation"
+      ]
+    },
+    "target_search_queries": [
+      {
+        "query": "online payment gateway api for developers",
+        "intent": "commercial",
+        "relevance": "Direct match for Stripe's core payment processing infrastructure, targeting engineers choosing an integration partner."
+      },
+      {
+        "query": "how to accept recurring subscriptions credit card",
+        "intent": "informational",
+        "relevance": "Educational intent capturing early-stage SaaS founders and product managers seeking Stripe Billing."
+      },
+      {
+        "query": "global multi currency checkout integration",
+        "intent": "transactional",
+        "relevance": "High-intent search from international e-commerce platforms requiring cross-border payment acceptance."
+      },
+      {
+        "query": "saas automated revenue recognition software",
+        "intent": "commercial",
+        "relevance": "Targeting finance teams and CFOs evaluating Stripe Revenue Recognition and Sigma for automated accounting."
+      },
+      {
+        "query": "ai fraud detection payments chargeback prevention",
+        "intent": "commercial",
+        "relevance": "Captures risk managers and merchants seeking automated machine learning fraud protection with Stripe Radar."
+      }
+    ],
+    "seo_improvements": {
+      "technical_signals": [
+        {
+          "name": "Title tag",
+          "status": "present",
+          "details": "Descriptive, brand-anchored page title present: 'Stripe | Financial Infrastructure for the Internet'."
+        },
+        {
+          "name": "Meta description",
+          "status": "present",
+          "details": "High-clarity meta description summarizing core value proposition and supported product capabilities."
+        },
+        {
+          "name": "H1 heading",
+          "status": "present",
+          "details": "Single clear H1 heading communicating the primary value proposition: 'Financial infrastructure for the internet'."
+        },
+        {
+          "name": "Canonical URL",
+          "status": "present",
+          "details": "Absolute self-referential canonical URL configured: 'https://stripe.com'."
+        },
+        {
+          "name": "Open Graph",
+          "status": "present",
+          "details": "Complete Open Graph metadata tags configured for rich previews on social and messaging platforms."
+        },
+        {
+          "name": "Structured data",
+          "status": "present",
+          "details": "Schema.org Organization and WebSite JSON-LD structured data implemented."
+        }
+      ],
+      "recommendations": [
+        {
+          "priority": "high",
+          "area": "Structured Data",
+          "finding": "Product and Pricing schema markup is incomplete on public pricing landing pages.",
+          "recommendation": "Implement schema.org/SoftwareApplication and OfferCatalog JSON-LD blocks on product pricing pages to unlock Google rich snippet pricing enhancements."
+        },
+        {
+          "priority": "medium",
+          "area": "International SEO",
+          "finding": "Multiple country subdomains feature localized content with varying hreflang declaration consistency.",
+          "recommendation": "Validate bidirectional hreflang cluster tags across all regional variations to prevent canonical confusion in localized SERPs."
+        },
+        {
+          "priority": "low",
+          "area": "Internal Linking",
+          "finding": "Documentation guides occasionally omit contextual internal links back to commercial product marketing pages.",
+          "recommendation": "Implement programmatic related-product link banners across developer tutorials to improve topic authority and organic conversion."
+        }
+      ]
+    },
+    "top_services": [
+      {
+        "title": "Global Payments & Checkout",
+        "description": "Unified APIs and prebuilt checkout components to accept credit cards, digital wallets, bank transfers, and 100+ local payment methods globally.",
+        "target_audience": "E-commerce brands, marketplaces, SaaS platforms, and digital product merchants."
+      },
+      {
+        "title": "Stripe Billing & Subscriptions",
+        "description": "Flexible subscription management, tiered usage-based rating, automated dunning, customer portal, and invoice lifecycle automation.",
+        "target_audience": "Subscription businesses, enterprise SaaS providers, and recurring service agencies."
+      },
+      {
+        "title": "Stripe Connect for Platforms",
+        "description": "Complete payment infrastructure for marketplaces and software platforms to onboard sellers, route funds, and split multiparty payouts.",
+        "target_audience": "On-demand marketplaces, vertical SaaS platforms, and creator economy networks."
+      },
+      {
+        "title": "Stripe Radar Fraud Defense",
+        "description": "Machine-learning risk assessment trained on billions of global data points to block fraud, minimize false declines, and automate dispute resolution.",
+        "target_audience": "Risk operations teams, payment managers, and high-volume digital merchants."
+      },
+      {
+        "title": "Stripe Issuing & Corporate Cards",
+        "description": "API-driven physical and virtual card issuing with customizable spending controls, real-time auth webhooks, and automated expense reconciliation.",
+        "target_audience": "Fintech applications, corporate travel and expense platforms, and logistics aggregators."
+      }
+    ],
+    "target_audience": {
+      "summary": "Stripe serves technical and commercial operators across internet commerce, ranging from individual startup founders to Fortune 500 enterprise engineering and treasury divisions.",
+      "primary_segments": [
+        "Software Engineers, CTOs, and Product Builders requiring developer-first APIs and reliable sandbox test environments",
+        "SaaS Founders and Revenue Operations Leaders managing global multi-currency recurring subscription models",
+        "Marketplace Architects needing compliant split-payment routing and global sub-merchant onboarding",
+        "Enterprise CFOs and Treasury Executives modernizing payment acceptance costs, reporting, and automated tax compliance"
+      ],
+      "buyer_personas": [
+        {
+          "role": "Chief Technology Officer / Head of Engineering",
+          "priorities": [
+            "99.999% platform uptime and SLA guarantees",
+            "Comprehensive, accurate, copy-pasteable API documentation",
+            "Zero PCI-DSS compliance scope burden via hosted client fields"
+          ],
+          "pain_points": [
+            "Legacy payment gateway downtime causing lost transaction revenue",
+            "Complex regulatory and PCI compliance maintenance overhead",
+            "Fragmented disparate APIs for cards, ACH, and alternative local payment methods"
+          ]
+        },
+        {
+          "role": "VP of Finance / Revenue Operations Director",
+          "priorities": [
+            "Automated multi-jurisdiction tax calculation and filing with Stripe Tax",
+            "Unified financial reconciliation across global currencies",
+            "Low card processing interchange rates and automatic smart dunning"
+          ],
+          "pain_points": [
+            "Manual dunning and high involuntary churn from expired card numbers",
+            "Time-consuming end-of-month manual reconciliation across disparate banking portals",
+            "Cross-border payment conversion drop-offs due to lacking local currency settlement"
+          ]
+        }
+      ]
+    }
+  },
+  "metadata": {
+    "report_id": "rep_stripe_intelligence_2026",
+    "analyzed_at": "2026-11-18T22:00:00Z",
+    "provider_used": "gemini-2.5-flash",
+    "model_name": "gemini-2.5-flash",
+    "execution_time_ms": 1420,
+    "input_tokens": 3410,
+    "output_tokens": 1285,
+    "estimated_cost_usd": 0.001712,
+    "sample_data": false
+  }
+}
