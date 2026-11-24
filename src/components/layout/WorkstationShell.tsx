@@ -97,8 +97,12 @@ export function WorkstationShell({
           {/* Brand Header */}
           <div className="h-14 px-6 flex items-center justify-between border-b border-[#F1F3FF]">
             <Link to="/" className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-[#2538D0] flex items-center justify-center text-white shadow-xs">
-                <Layers size={18} strokeWidth={2.3} />
+              <div className="w-8 h-8 rounded-lg bg-[#2538D0] flex items-center justify-center text-white shadow-xs overflow-hidden shrink-0">
+                <img
+                  src="/logo.png"
+                  alt="LinkIntel AI"
+                  className="w-full h-full object-cover rounded-lg"
+                />
               </div>
               <div className="flex flex-col">
                 <span className="font-['Manrope',sans-serif] font-bold text-base leading-none text-[#141B2C]">
