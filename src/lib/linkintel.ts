@@ -468,7 +468,11 @@ export async function analyzeWebsite(
   try {
     const response = await fetch(`${preferences.apiBaseUrl}/link-analysis`, {
       method: "POST",
-      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+        "X-Workspace-Id": getActiveWorkspace(),
+      },
       body: JSON.stringify({ url }),
       signal: controller.signal,
     });
@@ -620,9 +624,155 @@ export async function checkApiHealthDetailed(apiBaseUrl: string): Promise<ApiHea
   }
 }
 
-export async function checkApiHealth(apiBaseUrl: string): Promise<boolean> {
-  const result = await checkApiHealthDetailed(apiBaseUrl);
-  return result.reachable;
+export function getActiveWorkspace(): string {
+  if (typeof window === "undefined") return "default";
+  return localStorage.getItem("linkintel_workspace_id") || "default";
+}
+
+export function setActiveWorkspace(workspaceId: string): void {
+  if (typeof window === "undefined") return;
+  localStorage.setItem("linkintel_workspace_id", workspaceId.trim() || "default");
+}
+
+export interface SavedReportSummary {
+  id: string;
+  workspace_id: string;
+  url: string;
+  brand_name: string;
+  category: string;
+  summary: string;
+  model_used: string;
+  is_sample: boolean;
+  tokens_used: number;
+  cost_usd: number;
+  created_at: string | null;
+}
+
+export interface ReportsListResponse {
+  items: SavedReportSummary[];
+  total: number;
+  workspace_id: string;
+}
+
+export interface SavedBenchmarkSummary {
+  id: string;
+  workspace_id: string;
+  target_url: string;
+  benchmark_mode: string;
+  is_simulated: boolean;
+  winner_model: string;
+  created_at: string | null;
+}
+
+export interface BenchmarksListResponse {
+  items: SavedBenchmarkSummary[];
+  total: number;
+  workspace_id: string;
+}
+
+export async function fetchReportsList(
+  apiBaseUrl: string,
+  options?: { q?: string; skip?: number; limit?: number; workspaceId?: string },
+): Promise<ReportsListResponse> {
+  const normalized = apiBaseUrl.trim().replace(/\/+$/, "");
+  const ws = options?.workspaceId || getActiveWorkspace();
+  const params = new URLSearchParams();
+  if (options?.q) params.set("q", options.q);
+  if (options?.skip) params.set("skip", String(options.skip));
+  if (options?.limit) params.set("limit", String(options.limit));
+  const queryStr = params.toString() ? `?${params.toString()}` : "";
+
+  const response = await fetch(`${normalized}/reports${queryStr}`, {
+    headers: {
+      Accept: "application/json",
+      "X-Workspace-Id": ws,
+    },
+  });
+  if (!response.ok) {
+    throw new Error(`Failed to fetch reports archive (HTTP ${response.status})`);
+  }
+  return response.json();
+}
+
+export async function fetchReportById(
+  apiBaseUrl: string,
+  reportId: string,
+  workspaceId?: string,
+): Promise<LinkAnalysis> {
+  const normalized = apiBaseUrl.trim().replace(/\/+$/, "");
+  const ws = workspaceId || getActiveWorkspace();
+  const response = await fetch(`${normalized}/reports/${encodeURIComponent(reportId)}`, {
+    headers: {
+      Accept: "application/json",
+      "X-Workspace-Id": ws,
+    },
+  });
+  if (!response.ok) {
+    throw new Error(`Failed to load report '${reportId}' (HTTP ${response.status})`);
+  }
+  return response.json();
+}
+
+export async function deleteReportById(
+  apiBaseUrl: string,
+  reportId: string,
+  workspaceId?: string,
+): Promise<{ status: string; id: string }> {
+  const normalized = apiBaseUrl.trim().replace(/\/+$/, "");
+  const ws = workspaceId || getActiveWorkspace();
+  const response = await fetch(`${normalized}/reports/${encodeURIComponent(reportId)}`, {
+    method: "DELETE",
+    headers: {
+      Accept: "application/json",
+      "X-Workspace-Id": ws,
+    },
+  });
+  if (!response.ok) {
+    throw new Error(`Failed to delete report '${reportId}' (HTTP ${response.status})`);
+  }
+  return response.json();
+}
+
+export async function fetchBenchmarksList(
+  apiBaseUrl: string,
+  options?: { skip?: number; limit?: number; workspaceId?: string },
+): Promise<BenchmarksListResponse> {
+  const normalized = apiBaseUrl.trim().replace(/\/+$/, "");
+  const ws = options?.workspaceId || getActiveWorkspace();
+  const params = new URLSearchParams();
+  if (options?.skip) params.set("skip", String(options.skip));
+  if (options?.limit) params.set("limit", String(options.limit));
+  const queryStr = params.toString() ? `?${params.toString()}` : "";
+
+  const response = await fetch(`${normalized}/benchmarks${queryStr}`, {
+    headers: {
+      Accept: "application/json",
+      "X-Workspace-Id": ws,
+    },
+  });
+  if (!response.ok) {
+    throw new Error(`Failed to fetch benchmark history (HTTP ${response.status})`);
+  }
+  return response.json();
+}
+
+export async function fetchBenchmarkById(
+  apiBaseUrl: string,
+  benchmarkId: string,
+  workspaceId?: string,
+): Promise<BenchmarkRunResponse> {
+  const normalized = apiBaseUrl.trim().replace(/\/+$/, "");
+  const ws = workspaceId || getActiveWorkspace();
+  const response = await fetch(`${normalized}/benchmarks/${encodeURIComponent(benchmarkId)}`, {
+    headers: {
+      Accept: "application/json",
+      "X-Workspace-Id": ws,
+    },
+  });
+  if (!response.ok) {
+    throw new Error(`Failed to load benchmark '${benchmarkId}' (HTTP ${response.status})`);
+  }
+  return response.json();
 }
 
 export interface ProviderStatusItem {
@@ -720,7 +870,11 @@ export async function runModelBenchmark(
   const normalized = apiBaseUrl.trim().replace(/\/+$/, "");
   const response = await fetch(`${normalized}/benchmark/run`, {
     method: "POST",
-    headers: { "Content-Type": "application/json", Accept: "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      Accept: "application/json",
+      "X-Workspace-Id": getActiveWorkspace(),
+    },
     body: JSON.stringify(request),
   });
   if (!response.ok) {

@@ -5,10 +5,12 @@ import uuid
 import threading
 from collections import defaultdict
 from typing import Dict, List, Optional
-from fastapi import APIRouter, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.responses import JSONResponse
+from sqlalchemy.orm import Session
 
 from ..config import settings
+from ..database import get_db, ReportRecord, BenchmarkRecord
 from ..schemas.request import LinkAnalysisRequest
 from ..schemas.response import LinkAnalysisResponse
 from ..schemas.benchmark import ProviderStatusResponse, BenchmarkRunRequest, BenchmarkRunResponse
@@ -33,6 +35,17 @@ def get_client_ip(request: Request) -> str:
     if forwarded:
         return forwarded.split(",")[0].strip()
     return request.client.host if request.client else "127.0.0.1"
+
+
+def get_workspace_id(request: Request) -> str:
+    """Extracts isolated workspace identifier from header or query param."""
+    header_val = request.headers.get("x-workspace-id") or request.headers.get("X-Workspace-Id")
+    if header_val and header_val.strip():
+        return header_val.strip()[:64]
+    query_val = request.query_params.get("workspace_id")
+    if query_val and query_val.strip():
+        return query_val.strip()[:64]
+    return "default"
 
 
 class SimpleRateLimiter:
@@ -130,7 +143,11 @@ async def get_models_status():
     tags=["Model Lab"],
     response_model=BenchmarkRunResponse,
 )
-async def run_benchmark(request: BenchmarkRunRequest, http_req: Request):
+async def run_benchmark(
+    request: BenchmarkRunRequest,
+    http_req: Request,
+    db: Session = Depends(get_db),
+):
     """
     Executes a controlled benchmark comparing Gemini, OpenAI, and Anthropic
     on latency, token consumption, cost economics, and schema validity.
@@ -151,7 +168,27 @@ async def run_benchmark(request: BenchmarkRunRequest, http_req: Request):
         )
 
     log_event("benchmark_requested", target_url=request.url, providers=request.providers, mock=request.mock_mode)
-    return await benchmark_service.run_benchmark(request)
+    benchmark_result = await benchmark_service.run_benchmark(request)
+
+    # Persist benchmark result with workspace isolation
+    try:
+        workspace_id = get_workspace_id(http_req)
+        bmk_record = BenchmarkRecord(
+            id=benchmark_result.benchmark_id,
+            workspace_id=workspace_id,
+            target_url=benchmark_result.target_url,
+            benchmark_mode=benchmark_result.benchmark_mode,
+            is_simulated=benchmark_result.is_simulated,
+            winner_model=benchmark_result.recommended_winner or "",
+            results_json=benchmark_result.model_dump_json(),
+        )
+        db.add(bmk_record)
+        db.commit()
+    except Exception as db_err:
+        log_event("benchmark_persistence_error", error=str(db_err))
+        db.rollback()
+
+    return benchmark_result
 
 
 @router.post(
@@ -161,7 +198,11 @@ async def run_benchmark(request: BenchmarkRunRequest, http_req: Request):
     response_model=LinkAnalysisResponse,
     status_code=status.HTTP_200_OK,
 )
-async def analyze_link(request: LinkAnalysisRequest, http_req: Request):
+async def analyze_link(
+    request: LinkAnalysisRequest,
+    http_req: Request,
+    db: Session = Depends(get_db),
+):
     """
     Analyzes a submitted business website and returns five structured dimensions of
     business intelligence, competitor comparisons, search queries, SEO, and audience profiles.
@@ -288,6 +329,37 @@ async def analyze_link(request: LinkAnalysisRequest, http_req: Request):
         # Cache successful analysis ONLY (never cache errors)
         analysis_cache.set(cache_key, analysis_response)
 
+        # Persist to database with workspace isolation
+        workspace_id = get_workspace_id(http_req)
+        try:
+            brand_name = ""
+            category = ""
+            summary = ""
+            if analysis_response.analysis and analysis_response.analysis.business_summary:
+                bs = analysis_response.analysis.business_summary
+                brand_name = bs.brand_name or ""
+                category = bs.industry_category or ""
+                summary = bs.one_line_pitch or ""
+
+            db_record = ReportRecord(
+                id=request_id.replace("req-", "rep_"),
+                workspace_id=workspace_id,
+                url=normalized_url,
+                brand_name=brand_name,
+                category=category,
+                summary=summary,
+                report_json=analysis_response.model_dump_json(),
+                model_used=llm_result.model,
+                is_sample=bool(getattr(analysis_response.analysis.metadata, "sample_data", False)),
+                tokens_used=llm_result.input_tokens + llm_result.output_tokens,
+                cost_usd=cost_info.total_cost_usd,
+            )
+            db.add(db_record)
+            db.commit()
+        except Exception as db_err:
+            log_event("report_persistence_error", request_id=request_id, error=str(db_err))
+            db.rollback()
+
         return analysis_response
 
     except AnalysisServiceError as e:
@@ -318,3 +390,135 @@ async def analyze_link(request: LinkAnalysisRequest, http_req: Request):
                 "request_id": request_id,
             },
         )
+
+
+@router.get(
+    "/reports",
+    summary="List analysis reports for current workspace",
+    tags=["Analysis"],
+)
+async def list_reports(
+    http_req: Request,
+    q: Optional[str] = None,
+    skip: int = 0,
+    limit: int = 50,
+    db: Session = Depends(get_db),
+):
+    """Returns stored reports for the requested workspace with optional query search and pagination."""
+    workspace_id = get_workspace_id(http_req)
+    query = db.query(ReportRecord).filter(ReportRecord.workspace_id == workspace_id)
+    if q and q.strip():
+        search_pattern = f"%{q.strip()}%"
+        query = query.filter(
+            (ReportRecord.url.ilike(search_pattern))
+            | (ReportRecord.brand_name.ilike(search_pattern))
+            | (ReportRecord.category.ilike(search_pattern))
+            | (ReportRecord.summary.ilike(search_pattern))
+        )
+    total = query.count()
+    items = query.order_by(ReportRecord.created_at.desc()).offset(skip).limit(limit).all()
+    return {
+        "items": [r.to_dict() for r in items],
+        "total": total,
+        "workspace_id": workspace_id,
+    }
+
+
+@router.get(
+    "/reports/{report_id}",
+    summary="Get single analysis report by ID",
+    tags=["Analysis"],
+)
+async def get_report_by_id(
+    report_id: str,
+    http_req: Request,
+    db: Session = Depends(get_db),
+):
+    """Retrieves full analysis payload for a stored report within the active workspace."""
+    workspace_id = get_workspace_id(http_req)
+    record = (
+        db.query(ReportRecord)
+        .filter(ReportRecord.id == report_id, ReportRecord.workspace_id == workspace_id)
+        .first()
+    )
+    if not record:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Report '{report_id}' not found in workspace '{workspace_id}'.",
+        )
+    return record.get_full_report()
+
+
+@router.delete(
+    "/reports/{report_id}",
+    summary="Delete analysis report by ID",
+    tags=["Analysis"],
+)
+async def delete_report(
+    report_id: str,
+    http_req: Request,
+    db: Session = Depends(get_db),
+):
+    """Permanently removes a saved report from the workspace archive."""
+    workspace_id = get_workspace_id(http_req)
+    record = (
+        db.query(ReportRecord)
+        .filter(ReportRecord.id == report_id, ReportRecord.workspace_id == workspace_id)
+        .first()
+    )
+    if not record:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Report '{report_id}' not found in workspace '{workspace_id}'.",
+        )
+    db.delete(record)
+    db.commit()
+    return {"status": "deleted", "id": report_id, "workspace_id": workspace_id}
+
+
+@router.get(
+    "/benchmarks",
+    summary="List benchmark runs for current workspace",
+    tags=["Model Lab"],
+)
+async def list_benchmarks(
+    http_req: Request,
+    skip: int = 0,
+    limit: int = 50,
+    db: Session = Depends(get_db),
+):
+    """Lists historical multi-model evaluation runs conducted in the active workspace."""
+    workspace_id = get_workspace_id(http_req)
+    query = db.query(BenchmarkRecord).filter(BenchmarkRecord.workspace_id == workspace_id)
+    total = query.count()
+    items = query.order_by(BenchmarkRecord.created_at.desc()).offset(skip).limit(limit).all()
+    return {
+        "items": [r.to_dict() for r in items],
+        "total": total,
+        "workspace_id": workspace_id,
+    }
+
+
+@router.get(
+    "/benchmarks/{benchmark_id}",
+    summary="Get single benchmark run results by ID",
+    tags=["Model Lab"],
+)
+async def get_benchmark_by_id(
+    benchmark_id: str,
+    http_req: Request,
+    db: Session = Depends(get_db),
+):
+    """Returns detailed benchmark evaluation breakdown for a previous run."""
+    workspace_id = get_workspace_id(http_req)
+    record = (
+        db.query(BenchmarkRecord)
+        .filter(BenchmarkRecord.id == benchmark_id, BenchmarkRecord.workspace_id == workspace_id)
+        .first()
+    )
+    if not record:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Benchmark '{benchmark_id}' not found in workspace '{workspace_id}'.",
+        )
+    return record.get_full_results()

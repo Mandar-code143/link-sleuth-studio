@@ -1,5 +1,6 @@
 """Main FastAPI application entry point for LinkIntel AI."""
 
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request, status
 from fastapi.encoders import jsonable_encoder
 from fastapi.middleware.cors import CORSMiddleware
@@ -8,7 +9,15 @@ from fastapi.exceptions import RequestValidationError
 
 from .config import settings
 from .api.routes import router
+from .database import init_db
 from .utils.logging import logger, log_event
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Initializes persistent database tables and manages application lifecycle."""
+    init_db()
+    yield
 
 
 def create_app() -> FastAPI:
@@ -22,6 +31,7 @@ def create_app() -> FastAPI:
         version="1.0.0",
         docs_url="/docs",
         redoc_url="/redoc",
+        lifespan=lifespan,
     )
 
     # Configure CORS strictly from environment settings
@@ -31,7 +41,7 @@ def create_app() -> FastAPI:
         CORSMiddleware,
         allow_origins=["*"] if allow_all else origins,
         allow_credentials=False if allow_all else True,
-        allow_methods=["GET", "POST", "OPTIONS"],
+        allow_methods=["GET", "POST", "DELETE", "PUT", "OPTIONS"],
         allow_headers=["*"],
     )
 

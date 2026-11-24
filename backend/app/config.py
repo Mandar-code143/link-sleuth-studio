@@ -68,6 +68,9 @@ class Settings(BaseSettings):
         alias="FRONTEND_ORIGINS",
     )
 
+    # Database persistence URL (SQLite by default, PostgreSQL in production)
+    database_url: str = Field(default="sqlite:///./linkintel.db", alias="DATABASE_URL")
+
     # HTTP safe fetcher limits
     request_timeout_seconds: float = Field(default=20.0, alias="REQUEST_TIMEOUT_SECONDS")
     max_response_bytes: int = Field(default=5_000_000, alias="MAX_RESPONSE_BYTES")

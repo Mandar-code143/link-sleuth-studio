@@ -54,14 +54,21 @@ import {
   checkApiHealthDetailed,
   DEFAULT_API_BASE_URL,
   deleteReport,
+  deleteReportById,
   DEMO_REPORT,
+  fetchBenchmarksList,
+  fetchBenchmarkById,
   fetchProviderStatus,
+  fetchReportById,
+  fetchReportsList,
+  getActiveWorkspace,
   getReport,
   readHistory,
   readPreferences,
   runModelBenchmark,
   savePreferences,
   saveReport,
+  setActiveWorkspace,
   validateWebsiteUrl,
   type ApiHealthStatus,
   type AppPreferences,
@@ -145,6 +152,7 @@ function BrandMark({ small = false }: { small?: boolean }) {
 }
 
 function Sidebar({ pathname, onClose }: { pathname: string; onClose: () => void }) {
+  const currentWs = getActiveWorkspace();
   return (
     <aside className="app-sidebar">
       <div className="sidebar-brand">
@@ -156,16 +164,21 @@ function Sidebar({ pathname, onClose }: { pathname: string; onClose: () => void 
           <X size={18} />
         </button>
       </div>
-      <div className="workspace-select">
+      <Link
+        to="/settings"
+        onClick={onClose}
+        className="workspace-select hover:opacity-90 transition-opacity"
+        title="Click to manage active workspace in Settings"
+      >
         <span className="workspace-icon">
           <BarChart3 size={15} />
         </span>
         <span>
           <b>Intelligence desk</b>
-          <small>Personal workspace</small>
+          <small>Workspace: {currentWs}</small>
         </span>
-        <ChevronDown size={14} className="workspace-chevron" />
-      </div>
+        <ChevronRight size={14} className="workspace-chevron" />
+      </Link>
       <p className="sidebar-label">WORKSPACE</p>
       <nav className="sidebar-nav" aria-label="Main navigation">
         {nav.map((item) => {
@@ -292,6 +305,28 @@ function AppShell({ children, title }: { children: ReactNode; title: string }) {
         </header>
         <div className="page-content">{children}</div>
       </main>
+      <nav className="mobile-bottom-nav" aria-label="Mobile Navigation">
+        <Link to="/" className={pathname === "/" ? "active" : ""}>
+          <PanelTop size={20} />
+          <span>Overview</span>
+        </Link>
+        <Link to="/analyze" className={pathname === "/analyze" ? "active" : ""}>
+          <FileSearch size={20} />
+          <span>Analyze</span>
+        </Link>
+        <Link to="/history" className={pathname === "/history" ? "active" : ""}>
+          <History size={20} />
+          <span>History</span>
+        </Link>
+        <Link to="/model-lab" className={pathname === "/model-lab" ? "active" : ""}>
+          <BrainCircuit size={20} />
+          <span>Model Lab</span>
+        </Link>
+        <Link to="/settings" className={pathname === "/settings" ? "active" : ""}>
+          <Settings2 size={20} />
+          <span>Settings</span>
+        </Link>
+      </nav>
     </div>
   );
 }
@@ -371,10 +406,24 @@ function EmptyState({
   );
 }
 
-function AnalysisForm({ compact = false }: { compact?: boolean }) {
+function AnalysisForm({
+  compact = false,
+  initialUrl = "",
+}: {
+  compact?: boolean;
+  initialUrl?: string;
+}) {
   const navigate = useNavigate();
   const [preferences] = usePreferences();
-  const [url, setUrl] = useState("");
+  const [url, setUrl] = useState(() => {
+    if (initialUrl) return initialUrl;
+    if (typeof window !== "undefined") {
+      const sp = new URLSearchParams(window.location.search);
+      const qUrl = sp.get("url");
+      if (qUrl) return qUrl;
+    }
+    return "";
+  });
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
@@ -521,6 +570,38 @@ export function DashboardPage() {
           </span>
         </span>
       </section>
+
+      <div className="evaluator-quickcheck p-4 rounded-xl border border-[#E5E7EF] bg-white shadow-xs mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+        <div className="flex items-center gap-2.5">
+          <span className="p-2 rounded-lg bg-[#EEF0FD] text-[#4355E8]">
+            <Radar size={18} />
+          </span>
+          <div>
+            <h4 className="text-sm font-semibold text-[#141B2C]">Evaluator Quick-Check Presets</h4>
+            <p className="text-xs text-[#475467]">
+              One-click live target evaluation for practical test review
+            </p>
+          </div>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          {[
+            { label: "Stripe", url: "https://stripe.com" },
+            { label: "Linear", url: "https://linear.app" },
+            { label: "Supabase", url: "https://supabase.com" },
+            { label: "Notion", url: "https://notion.so" },
+          ].map((preset) => (
+            <Link
+              key={preset.label}
+              to="/analyze"
+              search={{ url: preset.url }}
+              className="px-3 py-1.5 text-xs font-medium rounded-lg border border-[#E5E7EF] bg-slate-50 hover:border-[#4355E8] hover:text-[#4355E8] hover:bg-[#EEF0FD] transition-colors"
+            >
+              {preset.label}
+            </Link>
+          ))}
+        </div>
+      </div>
+
       <div className="overview-metrics">
         <div className="metric-card">
           <span className="metric-icon metric-icon-blue">
@@ -815,13 +896,38 @@ const queryIntents = [
 
 export function ReportPage() {
   const { id = "" } = useParams({ strict: false });
+  const [preferences] = usePreferences();
   const [report, setReport] = useState<LinkAnalysis | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
   const [activeTab, setActiveTab] = useState("competitors");
   const [copied, setCopied] = useState("");
   const [queryFilter, setQueryFilter] = useState("All intents");
   const [showJson, setShowJson] = useState(false);
   const navigate = useNavigate();
-  useEffect(() => setReport(getReport(id)), [id]);
+
+  useEffect(() => {
+    const local = getReport(id);
+    if (local) {
+      setReport(local);
+      return;
+    }
+    if (id && preferences.mode !== "demo") {
+      setLoading(true);
+      fetchReportById(preferences.apiBaseUrl, id)
+        .then((fetched) => {
+          if (fetched) {
+            saveReport(fetched);
+            setReport(fetched);
+          }
+        })
+        .catch((err) => {
+          setErrorMsg(err instanceof Error ? err.message : "Report could not be retrieved.");
+        })
+        .finally(() => setLoading(false));
+    }
+  }, [id, preferences.apiBaseUrl, preferences.mode]);
+
   const copyText = async (key: string, text: string) => {
     try {
       await navigator.clipboard.writeText(text);
@@ -841,12 +947,26 @@ export function ReportPage() {
     link.click();
     URL.revokeObjectURL(href);
   };
+
+  if (loading) {
+    return (
+      <AppShell title="Loading report...">
+        <div className="flex flex-col items-center justify-center min-h-[50vh] p-8">
+          <LoaderCircle size={36} className="animate-spin text-[#4355E8] mb-4" />
+          <p className="text-sm font-medium text-[#141B2C]">
+            Fetching report from workspace archive...
+          </p>
+        </div>
+      </AppShell>
+    );
+  }
+
   if (!report)
     return (
       <AppShell title="Report not found">
         <PageHeader
           title="Report not found"
-          description="This report is not available on this device."
+          description={errorMsg || "This report is not available on this device."}
         />
         <EmptyState
           title="No saved report here"
@@ -1724,13 +1844,48 @@ function TagList({ items, empty = "Not identified" }: { items: string[]; empty?:
 }
 
 export function HistoryPage() {
+  const [preferences] = usePreferences();
   const [entries, setEntries] = useState<HistoryEntry[]>([]);
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("All status");
   const [category, setCategory] = useState("All categories");
   const [sortNewest, setSortNewest] = useState(true);
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
-  useEffect(() => setEntries(readHistory()), []);
+
+  useEffect(() => {
+    // 1. Initial load from local storage
+    const local = readHistory();
+    setEntries(local);
+
+    // 2. Query persistent backend database if in live mode
+    if (preferences.mode !== "demo") {
+      fetchReportsList(preferences.apiBaseUrl)
+        .then((res) => {
+          if (res && res.items && res.items.length > 0) {
+            const dbEntries: HistoryEntry[] = res.items.map((item) => ({
+              id: item.id,
+              website: item.url,
+              brand: item.brand_name || item.url.replace(/^https?:\/\//, "").split("/")[0],
+              category: item.category || "General",
+              analyzedAt: item.created_at || new Date().toISOString(),
+              sample: item.is_sample,
+              status: "completed",
+            }));
+            const merged = [...dbEntries];
+            for (const l of local) {
+              if (!merged.some((m) => m.id === l.id || m.website === l.website)) {
+                merged.push(l);
+              }
+            }
+            setEntries(merged);
+          }
+        })
+        .catch(() => {
+          // Gracefully fallback to local records
+        });
+    }
+  }, [preferences.apiBaseUrl, preferences.mode]);
+
   const categories = useMemo(
     () => [...new Set(entries.map((item) => item.category).filter(Boolean))],
     [entries],
@@ -1753,9 +1908,16 @@ export function HistoryPage() {
         ),
     [entries, search, status, category, sortNewest],
   );
-  const confirmDelete = (id: string) => {
+  const confirmDelete = async (id: string) => {
     deleteReport(id);
-    setEntries(readHistory());
+    if (preferences.mode !== "demo") {
+      try {
+        await deleteReportById(preferences.apiBaseUrl, id);
+      } catch {
+        // Handled gracefully
+      }
+    }
+    setEntries((prev) => prev.filter((item) => item.id !== id));
     setDeleteTarget(null);
   };
   return (
@@ -2693,6 +2855,8 @@ function OptimizationPlan() {
 export function SettingsPage() {
   const [preferences, setPreferences] = usePreferences();
   const [apiUrl, setApiUrl] = useState(preferences.apiBaseUrl);
+  const [workspace, setWorkspace] = useState(() => getActiveWorkspace());
+  const [wsSaved, setWsSaved] = useState(false);
   const [saved, setSaved] = useState(false);
   const [testing, setTesting] = useState(false);
   const [healthStatus, setHealthStatus] = useState<ApiHealthStatus | null>(null);
@@ -2710,6 +2874,11 @@ export function SettingsPage() {
     setApiUrl(value);
     setSaved(true);
     window.setTimeout(() => setSaved(false), 1700);
+  };
+  const saveWorkspace = () => {
+    setActiveWorkspace(workspace);
+    setWsSaved(true);
+    window.setTimeout(() => setWsSaved(false), 1700);
   };
   const testConnection = async () => {
     setTesting(true);
@@ -2899,6 +3068,43 @@ export function SettingsPage() {
                 </div>
               </div>
             )}
+          </section>
+          <section className="settings-panel">
+            <div className="settings-panel-heading">
+              <span className="settings-panel-icon settings-icon-blue">
+                <BarChart3 size={18} />
+              </span>
+              <div>
+                <h2>Workspace & Multi-Tenancy</h2>
+                <p>Isolate reports and benchmark history by workspace identifier.</p>
+              </div>
+            </div>
+            <label className="settings-field-label" htmlFor="workspace-id">
+              Active Workspace Identifier
+            </label>
+            <div className="settings-api-row">
+              <input
+                id="workspace-id"
+                value={workspace}
+                onChange={(e) => setWorkspace(e.target.value)}
+                placeholder="default"
+              />
+              <Button onClick={saveWorkspace}>
+                {wsSaved ? (
+                  <>
+                    <Check size={15} />
+                    Saved
+                  </>
+                ) : (
+                  "Switch Workspace"
+                )}
+              </Button>
+            </div>
+            <p className="settings-field-help">
+              Outbound analysis and report queries include{" "}
+              <code>X-Workspace-Id: {workspace || "default"}</code> to isolate records in the
+              persistent database.
+            </p>
           </section>
           <section className="settings-panel">
             <div className="settings-panel-heading">

@@ -45,4 +45,7 @@ env/
 backend/.env
 backend/venv/
 backend/.venv/
+*.db
+*.sqlite
+*.sqlite3
 
