@@ -1865,7 +1865,8 @@ export function HistoryPage() {
             const dbEntries: HistoryEntry[] = res.items.map((item) => ({
               id: item.id,
               website: item.url,
-              brand: item.brand_name || item.url.replace(/^https?:\/\//, "").split("/")[0],
+              brand:
+                item.brand_name || item.url.replace(/^https?:\/\//, "").split("/")[0] || "Unknown",
               category: item.category || "General",
               analyzedAt: item.created_at || new Date().toISOString(),
               sample: item.is_sample,
@@ -2246,11 +2247,13 @@ export function ModelLabPage() {
         </span>
       </div>
       <div className="research-tabs">
-        {[
-          ["comparison", "Model comparison"],
-          ["benchmarks", "Benchmark plan"],
-          ["optimization", "Cost optimization"],
-        ].map(([key, label]) => (
+        {(
+          [
+            ["comparison", "Model comparison"],
+            ["benchmarks", "Benchmark plan"],
+            ["optimization", "Cost optimization"],
+          ] as [string, string][]
+        ).map(([key, label]) => (
           <button
             key={key}
             className={activeTab === key ? "research-tab active" : "research-tab"}

@@ -1,0 +1,69 @@
+# LinkIntel AI — Master Render Blueprint Specification
+# Provisions a complete 3-tier architecture:
+#   1. linkintel-frontend (Node.js SSR web service using TanStack Start & Nitro render-com preset)
+#   2. linkintel-api (Python FastAPI web service with Uvicorn, hardened SSRF protection & LLM integration)
+#   3. linkintel-db (Render PostgreSQL managed database with connection pooling)
+
+services:
+  # =========================================================================
+  # SERVICE A: FRONTEND WEB SERVICE (Node.js SSR)
+  # =========================================================================
+  - type: web
+    name: linkintel-frontend
+    runtime: node
+    plan: free
+    region: oregon
+    buildCommand: npm install && npm run build
+    startCommand: npm run start
+    healthCheckPath: /
+    envVars:
+      - key: NODE_VERSION
+        value: 20
+      - key: NITRO_PRESET
+        value: render-com
+      - key: HOST
+        value: 0.0.0.0
+      - key: VITE_API_BASE_URL
+        sync: false # Set during Blueprint launch to your public backend URL, e.g. https://linkintel-api.onrender.com
+
+  # =========================================================================
+  # SERVICE B: BACKEND API WEB SERVICE (FastAPI Python)
+  # =========================================================================
+  - type: web
+    name: linkintel-api
+    runtime: python
+    rootDir: backend
+    plan: free
+    region: oregon
+    buildCommand: pip install --upgrade pip && pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: LLM_PROVIDER
+        value: gemini
+      - key: LLM_MODEL
+        value: gemini-2.5-flash
+      - key: GEMINI_API_KEY
+        sync: false # Securely prompt during Blueprint launch; never commit secrets
+      - key: DATABASE_URL
+        fromDatabase:
+          name: linkintel-db
+          property: connectionString
+      - key: SEARCH_PROVIDER
+        value: duckduckgo
+      - key: FRONTEND_ORIGINS
+        sync: false # Set during Blueprint launch to your public frontend URL, e.g. https://linkintel-frontend.onrender.com
+      - key: TRUSTED_PROXIES
+        value: 127.0.0.1,::1,localhost,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16
+
+# =========================================================================
+# RESOURCE C: MANAGED POSTGRESQL DATABASE
+# =========================================================================
+databases:
+  - name: linkintel-db
+    databaseName: linkintel
+    user: linkintel_user
+    plan: free
+    region: oregon

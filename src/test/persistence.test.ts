@@ -15,12 +15,13 @@ describe("Frontend Workspace and Persistence Client", () => {
     vi.restoreAllMocks();
   });
 
-  it("handles active workspace storage and default fallback", () => {
-    expect(getActiveWorkspace()).toBe("default");
+  it("handles active workspace storage and unique client fallback", () => {
+    const ws = getActiveWorkspace();
+    expect(ws).toMatch(/^ws_/);
     setActiveWorkspace("client-omega");
     expect(getActiveWorkspace()).toBe("client-omega");
     setActiveWorkspace("");
-    expect(getActiveWorkspace()).toBe("default");
+    expect(getActiveWorkspace()).toMatch(/^ws_/);
   });
 
   it("fetchReportsList sends workspace header and query params", async () => {
@@ -61,7 +62,7 @@ describe("Frontend Workspace and Persistence Client", () => {
       }),
     );
     expect(result.items).toHaveLength(1);
-    expect(result.items[0].brand_name).toBe("Finance Corp");
+    expect(result.items[0]?.brand_name).toBe("Finance Corp");
   });
 
   it("fetchReportById loads single report", async () => {
@@ -133,7 +134,7 @@ describe("Frontend Workspace and Persistence Client", () => {
 
     const list = await fetchBenchmarksList("http://localhost:4000");
     expect(list.total).toBe(1);
-    expect(list.items[0].winner_model).toBe("gemini-2.5-flash");
+    expect(list.items[0]?.winner_model).toBe("gemini-2.5-flash");
 
     const detail = await fetchBenchmarkById("http://localhost:4000", "bmk_001");
     expect(detail.benchmark_id).toBe("bmk_001");

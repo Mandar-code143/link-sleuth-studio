@@ -140,7 +140,7 @@ export interface AppPreferences {
 }
 
 export const DEFAULT_API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL?.trim() || "http://localhost:4000";
+  (import.meta.env["VITE_API_BASE_URL"] as string | undefined)?.trim() || "http://localhost:4000";
 
 export const DEMO_REPORT: LinkAnalysis = {
   success: true,
@@ -419,13 +419,19 @@ export function deleteReport(id: string) {
 }
 
 export function readPreferences(): AppPreferences {
-  if (!storageAvailable()) return { mode: "demo", apiBaseUrl: DEFAULT_API_BASE_URL };
+  const isProductionApiConfigured =
+    Boolean(DEFAULT_API_BASE_URL) &&
+    !DEFAULT_API_BASE_URL.includes("localhost") &&
+    !DEFAULT_API_BASE_URL.includes("127.0.0.1");
+  const defaultMode: "demo" | "live" = isProductionApiConfigured ? "live" : "demo";
+
+  if (!storageAvailable()) return { mode: defaultMode, apiBaseUrl: DEFAULT_API_BASE_URL };
   try {
     const value: unknown = JSON.parse(window.localStorage.getItem(PREFS_KEY) || "null");
     if (value && typeof value === "object") {
       const prefs = value as Partial<AppPreferences>;
       return {
-        mode: prefs.mode === "live" ? "live" : "demo",
+        mode: prefs.mode === "live" ? "live" : prefs.mode === "demo" ? "demo" : defaultMode,
         apiBaseUrl:
           typeof prefs.apiBaseUrl === "string" && prefs.apiBaseUrl.trim()
             ? prefs.apiBaseUrl.trim().replace(/\/+$/, "")
@@ -433,9 +439,9 @@ export function readPreferences(): AppPreferences {
       };
     }
   } catch {
-    // Corrupted preferences return to safe demo mode.
+    // Corrupted preferences return to safe default mode.
   }
-  return { mode: "demo", apiBaseUrl: DEFAULT_API_BASE_URL };
+  return { mode: defaultMode, apiBaseUrl: DEFAULT_API_BASE_URL };
 }
 
 export function savePreferences(preferences: AppPreferences) {
@@ -481,22 +487,24 @@ export async function analyzeWebsite(
       let detailMsg = `The analysis service returned ${response.status}.`;
       if (payload && typeof payload === "object") {
         const p = payload as Record<string, unknown>;
-        if (p.error && typeof p.error === "object") {
-          const errObj = p.error as Record<string, unknown>;
-          if (typeof errObj.message === "string") {
+        if (p["error"] && typeof p["error"] === "object") {
+          const errObj = p["error"] as Record<string, unknown>;
+          if (typeof errObj["message"] === "string") {
             detailMsg =
-              typeof errObj.code === "string"
-                ? `[${errObj.code}] ${errObj.message}`
-                : errObj.message;
+              typeof errObj["code"] === "string"
+                ? `[${errObj["code"]}] ${errObj["message"]}`
+                : errObj["message"];
           }
         } else if ("detail" in p) {
-          const detail = p.detail;
+          const detail = p["detail"];
           if (typeof detail === "string") {
             detailMsg = detail;
           } else if (detail && typeof detail === "object") {
             const det = detail as Record<string, unknown>;
-            if (typeof det.message === "string") {
-              detailMsg = det.error_code ? `[${det.error_code}] ${det.message}` : det.message;
+            if (typeof det["message"] === "string") {
+              detailMsg = det["error_code"]
+                ? `[${det["error_code"]}] ${det["message"]}`
+                : String(det["message"]);
             } else {
               detailMsg = JSON.stringify(detail);
             }
@@ -532,23 +540,32 @@ export async function analyzeWebsite(
 }
 
 export interface ApiHealthStatus {
+  ok: boolean;
   reachable: boolean;
-  status: "ready" | "degraded" | "healthy" | "offline";
-  service?: string;
-  version?: string;
-  provider?: string;
-  model?: string;
-  providerKeyConfigured?: boolean;
-  searchProviderConfigured?: boolean;
-  warnings?: string[];
-  errorKind?: "connection_refused" | "cors" | "timeout" | "server_error" | "invalid_response";
-  errorMessage?: string;
+  status: "ready" | "degraded" | "healthy" | "offline" | "error";
+  latencyMs: number;
+  details?: Record<string, unknown> | null | undefined;
+  service?: string | undefined;
+  version?: string | undefined;
+  provider?: string | undefined;
+  model?: string | undefined;
+  providerKeyConfigured?: boolean | undefined;
+  searchProviderConfigured?: boolean | undefined;
+  warnings?: string[] | undefined;
+  errorKind?:
+    "connection_refused" | "cors" | "timeout" | "server_error" | "invalid_response" | undefined;
+  errorMessage?: string | undefined;
+}
+
+export function checkApiHealth(apiBaseUrl: string): Promise<ApiHealthStatus> {
+  return checkApiHealthDetailed(apiBaseUrl);
 }
 
 export async function checkApiHealthDetailed(apiBaseUrl: string): Promise<ApiHealthStatus> {
   const normalized = apiBaseUrl.trim().replace(/\/+$/, "");
   const controller = new AbortController();
   const timer = window.setTimeout(() => controller.abort(), 6000);
+  const startTime = typeof performance !== "undefined" ? performance.now() : Date.now();
   try {
     let res = await fetch(`${normalized}/health/ready`, {
       signal: controller.signal,
@@ -562,10 +579,17 @@ export async function checkApiHealthDetailed(apiBaseUrl: string): Promise<ApiHea
       }).catch(() => null);
     }
 
+    const elapsed = Math.max(
+      1,
+      Math.round((typeof performance !== "undefined" ? performance.now() : Date.now()) - startTime),
+    );
+
     if (!res) {
       return {
+        ok: false,
         reachable: false,
         status: "offline",
+        latencyMs: elapsed,
         errorKind: "connection_refused",
         errorMessage: `Could not reach ${normalized}. Ensure the backend service is running.`,
       };
@@ -573,47 +597,60 @@ export async function checkApiHealthDetailed(apiBaseUrl: string): Promise<ApiHea
 
     if (!res.ok && res.status >= 500) {
       return {
+        ok: false,
         reachable: true,
         status: "offline",
+        latencyMs: elapsed,
         errorKind: "server_error",
         errorMessage: `Backend returned HTTP ${res.status}. Check backend logs.`,
       };
     }
 
-    const data = await res.json().catch(() => null);
+    const data = (await res.json().catch(() => null)) as Record<string, unknown> | null;
     if (!data || typeof data !== "object") {
       return {
+        ok: false,
         reachable: true,
         status: "offline",
+        latencyMs: elapsed,
         errorKind: "invalid_response",
         errorMessage: "API responded with non-JSON content.",
       };
     }
 
-    const payload = data as Record<string, unknown>;
+    const payload = data;
     const providerKeyConfigured = Boolean(
-      payload.provider_key_present ?? payload.provider_key_configured ?? false,
+      payload["provider_key_present"] ?? payload["provider_key_configured"] ?? false,
     );
-    const searchConfigured = Boolean(payload.search_provider_configured ?? false);
+    const searchConfigured = Boolean(payload["search_provider_configured"] ?? false);
     const isReady =
-      payload.status === "ready" || (payload.status === "healthy" && providerKeyConfigured);
+      payload["status"] === "ready" || (payload["status"] === "healthy" && providerKeyConfigured);
 
     return {
+      ok: isReady,
       reachable: true,
       status: isReady ? "ready" : "degraded",
-      service: typeof payload.service === "string" ? payload.service : undefined,
-      version: typeof payload.version === "string" ? payload.version : undefined,
-      provider: typeof payload.provider === "string" ? payload.provider : undefined,
-      model: typeof payload.model === "string" ? payload.model : undefined,
+      latencyMs: elapsed,
+      service: typeof payload["service"] === "string" ? payload["service"] : undefined,
+      version: typeof payload["version"] === "string" ? payload["version"] : undefined,
+      provider: typeof payload["provider"] === "string" ? payload["provider"] : undefined,
+      model: typeof payload["model"] === "string" ? payload["model"] : undefined,
       providerKeyConfigured,
       searchProviderConfigured: searchConfigured,
-      warnings: Array.isArray(payload.warnings) ? (payload.warnings as string[]) : [],
+      warnings: Array.isArray(payload["warnings"]) ? (payload["warnings"] as string[]) : [],
+      details: payload,
     };
   } catch (err) {
+    const elapsed = Math.max(
+      1,
+      Math.round((typeof performance !== "undefined" ? performance.now() : Date.now()) - startTime),
+    );
     const isAbort = err instanceof DOMException && err.name === "AbortError";
     return {
+      ok: false,
       reachable: false,
       status: "offline",
+      latencyMs: elapsed,
       errorKind: isAbort ? "timeout" : "connection_refused",
       errorMessage: isAbort
         ? `Request timed out reaching ${normalized}.`
@@ -626,12 +663,27 @@ export async function checkApiHealthDetailed(apiBaseUrl: string): Promise<ApiHea
 
 export function getActiveWorkspace(): string {
   if (typeof window === "undefined") return "default";
-  return localStorage.getItem("linkintel_workspace_id") || "default";
+  let ws = localStorage.getItem("linkintel_workspace_id");
+  if (!ws) {
+    // Generate an automatic unique client workspace ID to prevent all visitors from sharing a single 'default' workspace
+    const randomSuffix =
+      typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+        ? crypto.randomUUID().slice(0, 8)
+        : Math.random().toString(36).slice(2, 10);
+    ws = `ws_${randomSuffix}`;
+    localStorage.setItem("linkintel_workspace_id", ws);
+  }
+  return ws;
 }
 
 export function setActiveWorkspace(workspaceId: string): void {
   if (typeof window === "undefined") return;
-  localStorage.setItem("linkintel_workspace_id", workspaceId.trim() || "default");
+  const clean = workspaceId.trim();
+  if (clean) {
+    localStorage.setItem("linkintel_workspace_id", clean);
+  } else {
+    localStorage.removeItem("linkintel_workspace_id");
+  }
 }
 
 export interface SavedReportSummary {
@@ -881,17 +933,20 @@ export async function runModelBenchmark(
     const err = (await response.json().catch(() => null)) as Record<string, unknown> | null;
     let msg = `Benchmark failed (HTTP ${response.status})`;
     if (err && typeof err === "object") {
-      if (err.error && typeof err.error === "object") {
-        const errObj = err.error as Record<string, unknown>;
-        if (typeof errObj.message === "string") {
+      if (err["error"] && typeof err["error"] === "object") {
+        const errObj = err["error"] as Record<string, unknown>;
+        if (typeof errObj["message"] === "string") {
           msg =
-            typeof errObj.code === "string" ? `[${errObj.code}] ${errObj.message}` : errObj.message;
+            typeof errObj["code"] === "string"
+              ? `[${errObj["code"]}] ${errObj["message"]}`
+              : String(errObj["message"]);
         }
-      } else if (err.detail) {
+      } else if (err["detail"]) {
+        const detail = err["detail"];
         msg =
-          typeof err.detail === "object" && (err.detail as Record<string, unknown>)?.message
-            ? String((err.detail as Record<string, unknown>).message)
-            : String(err.detail);
+          typeof detail === "object" && detail && (detail as Record<string, unknown>)["message"]
+            ? String((detail as Record<string, unknown>)["message"])
+            : String(detail);
       }
     }
     throw new Error(msg);

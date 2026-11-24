@@ -10,13 +10,16 @@
 ## 1. Core Link Analysis Endpoint
 
 ### `POST /link-analysis`
+
 Executes an end-to-end website intelligence analysis. Performs SSRF-safe fetching, technical SEO signal extraction, competitor search grounding, and LLM-driven business intelligence across all 5 mandatory dimensions.
 
 #### Request Headers
+
 - `Content-Type: application/json`
 - `Accept: application/json`
 
 #### Request Body
+
 ```json
 {
   "url": "https://www.hubspot.com"
@@ -24,6 +27,7 @@ Executes an end-to-end website intelligence analysis. Performs SSRF-safe fetchin
 ```
 
 #### Successful Response (HTTP 200 OK)
+
 ```json
 {
   "success": true,
@@ -96,7 +100,11 @@ Executes an end-to-end website intelligence analysis. Performs SSRF-safe fetchin
     ],
     "seo_improvements": {
       "primary_keyword": "inbound crm software",
-      "secondary_keywords": ["marketing automation", "sales pipeline management", "help desk software"],
+      "secondary_keywords": [
+        "marketing automation",
+        "sales pipeline management",
+        "help desk software"
+      ],
       "long_tail_keywords": ["all in one crm platform for growing teams"],
       "business_keywords": ["crm", "customer relationship management", "inbound marketing"],
       "current_title": "HubSpot | Inbound Marketing, Sales, and Service Software",
@@ -105,7 +113,11 @@ Executes an end-to-end website intelligence analysis. Performs SSRF-safe fetchin
       "current_meta_description": "HubSpot offers a complete CRM platform with all the tools needed for marketing, sales, content management, and customer service.",
       "recommended_meta_description": "Scale your revenue with HubSpot's all-in-one CRM platform. Connect sales, marketing, and customer service tools with seamless AI workflows.",
       "business_summary": "Inbound customer relationship management platform connecting sales, marketing, and support teams.",
-      "supporting_content": ["Inbound sales playbook", "Marketing automation workflows guide", "CRM migration checklist"],
+      "supporting_content": [
+        "Inbound sales playbook",
+        "Marketing automation workflows guide",
+        "CRM migration checklist"
+      ],
       "technical_findings": [
         {
           "name": "Title Tag",
@@ -183,15 +195,36 @@ Executes an end-to-end website intelligence analysis. Performs SSRF-safe fetchin
     ],
     "target_audience": {
       "primary_audience": "B2B Founders and Revenue Leaders scaling go-to-market teams",
-      "secondary_audience": ["Mid-Market RevOps Managers", "Digital Marketing Agencies", "Customer Support Directors"],
-      "industry_segments": ["SaaS & Software", "Professional Services", "E-commerce", "Financial Technology"],
-      "business_types": ["High-Growth Startups", "Mid-Market Enterprises", "Agency Service Providers"],
+      "secondary_audience": [
+        "Mid-Market RevOps Managers",
+        "Digital Marketing Agencies",
+        "Customer Support Directors"
+      ],
+      "industry_segments": [
+        "SaaS & Software",
+        "Professional Services",
+        "E-commerce",
+        "Financial Technology"
+      ],
+      "business_types": [
+        "High-Growth Startups",
+        "Mid-Market Enterprises",
+        "Agency Service Providers"
+      ],
       "profiles": [
         {
           "name": "The Scaling Revenue Leader",
           "business_type": "High-Growth B2B SaaS",
-          "needs": ["Unified customer view across sales and marketing", "Predictable deal velocity", "Automated pipeline attribution"],
-          "challenges": ["Disconnected point tools causing data silos", "Ramp-up friction for new sales reps", "Unclear lead quality signals"],
+          "needs": [
+            "Unified customer view across sales and marketing",
+            "Predictable deal velocity",
+            "Automated pipeline attribution"
+          ],
+          "challenges": [
+            "Disconnected point tools causing data silos",
+            "Ramp-up friction for new sales reps",
+            "Unclear lead quality signals"
+          ],
           "services": ["Marketing Hub", "Sales Hub"],
           "opportunity": "Standardize on an integrated tech stack to accelerate customer onboarding.",
           "evidence": "extracted"
@@ -199,18 +232,38 @@ Executes an end-to-end website intelligence analysis. Performs SSRF-safe fetchin
         {
           "name": "The Modern RevOps Architect",
           "business_type": "Mid-Market Enterprise",
-          "needs": ["Clean two-way data sync with ERP", "Automated lead routing logic", "Compliance audit trails"],
-          "challenges": ["Duplicate records across legacy databases", "Engineering backlog for CRM customization"],
+          "needs": [
+            "Clean two-way data sync with ERP",
+            "Automated lead routing logic",
+            "Compliance audit trails"
+          ],
+          "challenges": [
+            "Duplicate records across legacy databases",
+            "Engineering backlog for CRM customization"
+          ],
           "services": ["Operations Hub", "Enterprise CRM Suite"],
           "opportunity": "Deploy no-code webhook automation and bidirectional sync.",
           "evidence": "extracted"
         }
       ],
       "geographic_focus": ["Global", "North America", "EMEA", "APAC"],
-      "needs": ["CRM integration", "Inbound lead capture", "Pipeline visibility", "Lifecycle reporting"],
+      "needs": [
+        "CRM integration",
+        "Inbound lead capture",
+        "Pipeline visibility",
+        "Lifecycle reporting"
+      ],
       "challenges": ["Tool sprawl", "High customer churn", "Inconsistent lead follow-up"],
-      "interests": ["Inbound methodology", "AI-assisted sales cadence", "Conversion rate optimization"],
-      "marketing_segments": ["Tech Startup Founders", "Enterprise Marketing Executives", "Digital Transformation Leads"]
+      "interests": [
+        "Inbound methodology",
+        "AI-assisted sales cadence",
+        "Conversion rate optimization"
+      ],
+      "marketing_segments": [
+        "Tech Startup Founders",
+        "Enterprise Marketing Executives",
+        "Digital Transformation Leads"
+      ]
     }
   },
   "metadata": {
@@ -226,6 +279,7 @@ Executes an end-to-end website intelligence analysis. Performs SSRF-safe fetchin
 ```
 
 #### Error Responses
+
 - **HTTP 400 Bad Request:** Missing or invalid URL schema (`http/https`).
 - **HTTP 403 Forbidden / SSRF Blocked:** Prohibited target (e.g. localhost, private RFC1918 IP, AWS metadata `169.254.169.254`).
 - **HTTP 502 Bad Gateway:** Remote server unreachable, DNS lookup failed, or redirect loop detected.
@@ -236,7 +290,9 @@ Executes an end-to-end website intelligence analysis. Performs SSRF-safe fetchin
 ## 2. Health & Readiness Endpoints
 
 ### `GET /health`
+
 Liveness probe returning operational status.
+
 ```json
 {
   "status": "healthy",
@@ -247,7 +303,9 @@ Liveness probe returning operational status.
 ```
 
 ### `GET /health/ready`
+
 Readiness probe verifying API key configuration, search provider status, and environment health.
+
 ```json
 {
   "status": "ready",
@@ -267,7 +325,9 @@ Readiness probe verifying API key configuration, search provider status, and env
 ## 3. Multi-Model Research Lab Endpoints
 
 ### `GET /models/status`
+
 Returns live configuration status, default models, context windows, and official published pricing for Gemini, OpenAI, and Anthropic.
+
 ```json
 {
   "providers": [
@@ -277,7 +337,7 @@ Returns live configuration status, default models, context windows, and official
       "model": "gemini-2.5-flash",
       "configured": true,
       "input_rate_per_million": 0.15,
-      "output_rate_per_million": 0.60,
+      "output_rate_per_million": 0.6,
       "context_window": "1,048,576 tokens",
       "structured_output_mode": "Native Pydantic Schema Mode",
       "pricing_source": "https://ai.google.dev/gemini-api/docs/pricing"
@@ -288,7 +348,7 @@ Returns live configuration status, default models, context windows, and official
       "model": "gpt-4o-mini",
       "configured": false,
       "input_rate_per_million": 0.15,
-      "output_rate_per_million": 0.60,
+      "output_rate_per_million": 0.6,
       "context_window": "128,000 tokens",
       "structured_output_mode": "JSON Object / Structured Outputs",
       "pricing_source": "https://developers.openai.com/api/docs/pricing"
@@ -298,8 +358,8 @@ Returns live configuration status, default models, context windows, and official
       "name": "Anthropic Claude",
       "model": "claude-3-5-haiku-20241022",
       "configured": false,
-      "input_rate_per_million": 0.80,
-      "output_rate_per_million": 4.00,
+      "input_rate_per_million": 0.8,
+      "output_rate_per_million": 4.0,
       "context_window": "200,000 tokens",
       "structured_output_mode": "Messages API JSON Schema Enforcement",
       "pricing_source": "https://platform.claude.com/docs/en/about-claude/pricing"
@@ -312,9 +372,11 @@ Returns live configuration status, default models, context windows, and official
 ```
 
 ### `POST /benchmark/run`
+
 Executes an on-demand comparative benchmark across the specified LLM models. Calculates response latency, token consumption, microdollar costs, schema compliance, and dimensional completeness.
 
 #### Request Body
+
 ```json
 {
   "url": "https://acmecloud.example",
@@ -324,4 +386,5 @@ Executes an on-demand comparative benchmark across the specified LLM models. Cal
 ```
 
 #### Response (HTTP 200 OK)
+
 Returns array of model benchmark results, dimension scores (0-100%), and recommended winner.

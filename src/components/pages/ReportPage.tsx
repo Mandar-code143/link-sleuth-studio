@@ -39,12 +39,14 @@ import {
 } from "@/lib/linkintel";
 
 export function ReportPage() {
-  const params: any = useParams({ strict: false });
-  const reportId = params?.id || "sample-northstar-01";
+  const params = useParams({ strict: false }) as Record<string, string | undefined>;
+  const reportId = params?.["id"] || "sample-northstar-01";
   const navigate = useNavigate();
 
   const [report, setReport] = useState<LinkAnalysis | null>(null);
-  const [activeTab, setActiveTab] = useState<"competitors" | "queries" | "seo" | "services" | "audience">("competitors");
+  const [activeTab, setActiveTab] = useState<
+    "competitors" | "queries" | "seo" | "services" | "audience"
+  >("competitors");
   const [copiedRaw, setCopiedRaw] = useState(false);
   const [copiedMarkdown, setCopiedMarkdown] = useState(false);
   const [copiedQueryIndex, setCopiedQueryIndex] = useState<number | null>(null);
@@ -140,7 +142,9 @@ ${analysis.target_search_queries.map((q) => `- "${q.query}" [${q.platforms.join(
         c.opportunity,
       ]),
     ];
-    const csvContent = "data:text/csv;charset=utf-8," + rows.map((e) => e.map(x => `"${x.replace(/"/g, '""')}"`).join(",")).join("\n");
+    const csvContent =
+      "data:text/csv;charset=utf-8," +
+      rows.map((e) => e.map((x) => `"${x.replace(/"/g, '""')}"`).join(",")).join("\n");
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
@@ -159,9 +163,13 @@ ${analysis.target_search_queries.map((q) => `- "${q.query}" [${q.platforms.join(
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div className="flex flex-col gap-2">
             <div className="flex items-center gap-1.5 text-xs text-[#757687]">
-              <Link to="/" className="hover:text-[#2538D0] transition-colors">Workspace</Link>
+              <Link to="/" className="hover:text-[#2538D0] transition-colors">
+                Workspace
+              </Link>
               <span>/</span>
-              <Link to="/history" className="hover:text-[#2538D0] transition-colors">Analysis Reports</Link>
+              <Link to="/history" className="hover:text-[#2538D0] transition-colors">
+                Analysis Reports
+              </Link>
               <span>/</span>
               <span className="font-mono text-xs text-[#2538D0] bg-[#DFE0FF] px-2 py-0.5 rounded font-semibold">
                 {meta.report_id || reportId}
@@ -191,7 +199,9 @@ ${analysis.target_search_queries.map((q) => `- "${q.query}" [${q.platforms.join(
                   </span>
                 </div>
                 <div className="flex items-center gap-3 text-xs text-[#757687] mt-1 flex-wrap">
-                  <span>Analyzed: {new Date(meta.analyzed_at || Date.now()).toLocaleDateString()}</span>
+                  <span>
+                    Analyzed: {new Date(meta.analyzed_at || Date.now()).toLocaleDateString()}
+                  </span>
                   <span>•</span>
                   <span className="text-[#2538D0] font-medium">
                     {meta.model || "Gemini 2.5 Flash"} (~0.42s latency)
@@ -212,7 +222,11 @@ ${analysis.target_search_queries.map((q) => `- "${q.query}" [${q.platforms.join(
               onClick={handleCopyRaw}
               className="px-3.5 py-2 rounded-xl bg-white hover:bg-[#F1F3FF] text-[#141B2C] text-xs font-semibold flex items-center gap-1.5 border border-[#E5E7EF] shadow-2xs transition-all"
             >
-              {copiedRaw ? <Check size={14} className="text-[#005A4A]" /> : <FileCode size={14} className="text-[#2538D0]" />}
+              {copiedRaw ? (
+                <Check size={14} className="text-[#005A4A]" />
+              ) : (
+                <FileCode size={14} className="text-[#2538D0]" />
+              )}
               <span>{copiedRaw ? "Copied JSON" : "Raw JSON"}</span>
             </button>
 
@@ -221,7 +235,11 @@ ${analysis.target_search_queries.map((q) => `- "${q.query}" [${q.platforms.join(
               onClick={handleCopyMarkdown}
               className="px-3.5 py-2 rounded-xl bg-white hover:bg-[#F1F3FF] text-[#141B2C] text-xs font-semibold flex items-center gap-1.5 border border-[#E5E7EF] shadow-2xs transition-all"
             >
-              {copiedMarkdown ? <Check size={14} className="text-[#005A4A]" /> : <Copy size={14} className="text-[#757687]" />}
+              {copiedMarkdown ? (
+                <Check size={14} className="text-[#005A4A]" />
+              ) : (
+                <Copy size={14} className="text-[#757687]" />
+              )}
               <span>{copiedMarkdown ? "Copied MD" : "Markdown"}</span>
             </button>
 
@@ -271,7 +289,7 @@ ${analysis.target_search_queries.map((q) => `- "${q.query}" [${q.platforms.join(
 
             <Link
               to="/analyze"
-              search={{ url: report.website } as any}
+              search={{ url: report.website } as Record<string, unknown>}
               className="p-2 rounded-xl bg-[#2538D0] hover:bg-[#1E31C0] text-white shadow-2xs transition-all flex items-center justify-center"
               title="Re-run Link Analysis"
             >
@@ -321,17 +339,13 @@ ${analysis.target_search_queries.map((q) => `- "${q.query}" [${q.platforms.join(
             <h2 className="text-base font-bold font-['Manrope',sans-serif] text-[#141B2C] mb-2">
               Executive Core Proposition
             </h2>
-            <p className="text-xs sm:text-sm text-[#454655] leading-relaxed">
-              {brand.summary}
-            </p>
+            <p className="text-xs sm:text-sm text-[#454655] leading-relaxed">{brand.summary}</p>
           </div>
           <div className="pt-4 mt-4 bg-[#F1F3FF] p-3 rounded-xl flex items-center justify-between border border-[#DFE0FF]">
             <span className="text-[11px] font-bold uppercase text-[#141B2C]">
               Category Position
             </span>
-            <span className="font-mono text-xs font-bold text-[#2538D0]">
-              {brand.category}
-            </span>
+            <span className="font-mono text-xs font-bold text-[#2538D0]">{brand.category}</span>
           </div>
         </div>
 
@@ -404,14 +418,18 @@ ${analysis.target_search_queries.map((q) => `- "${q.query}" [${q.platforms.join(
                   <span className="w-2.5 h-2.5 rounded-full bg-[#2538D0]" />
                   <span className="text-xs font-semibold text-[#141B2C]">Extracted Tokens</span>
                 </div>
-                <span className="font-mono text-xs text-[#2538D0] font-bold">32 Elements (24%)</span>
+                <span className="font-mono text-xs text-[#2538D0] font-bold">
+                  32 Elements (24%)
+                </span>
               </div>
               <div className="flex items-center justify-between p-2 rounded-lg bg-[#F1F3FF] border border-[#DFE0FF]">
                 <div className="flex items-center gap-2">
                   <span className="w-2.5 h-2.5 rounded-full bg-[#5566EF]" />
                   <span className="text-xs font-semibold text-[#141B2C]">Inferred Models</span>
                 </div>
-                <span className="font-mono text-xs text-[#5566EF] font-bold">5 Hypotheses (8%)</span>
+                <span className="font-mono text-xs text-[#5566EF] font-bold">
+                  5 Hypotheses (8%)
+                </span>
               </div>
             </div>
           </div>
@@ -436,7 +454,9 @@ ${analysis.target_search_queries.map((q) => `- "${q.query}" [${q.platforms.join(
           >
             <ShieldCheck size={15} />
             <span>01. Competitor Intel</span>
-            <span className={`px-1.5 py-0.5 rounded text-[10px] ${activeTab === "competitors" ? "bg-white/20 text-white" : "bg-[#F1F3FF] text-[#454655]"}`}>
+            <span
+              className={`px-1.5 py-0.5 rounded text-[10px] ${activeTab === "competitors" ? "bg-white/20 text-white" : "bg-[#F1F3FF] text-[#454655]"}`}
+            >
               {analysis.competitor_analysis.competitors.length} Rivals
             </span>
           </button>
@@ -452,7 +472,9 @@ ${analysis.target_search_queries.map((q) => `- "${q.query}" [${q.platforms.join(
           >
             <Search size={15} />
             <span>02. Search Queries</span>
-            <span className={`px-1.5 py-0.5 rounded text-[10px] ${activeTab === "queries" ? "bg-white/20 text-white" : "bg-[#F1F3FF] text-[#454655]"}`}>
+            <span
+              className={`px-1.5 py-0.5 rounded text-[10px] ${activeTab === "queries" ? "bg-white/20 text-white" : "bg-[#F1F3FF] text-[#454655]"}`}
+            >
               5 Platforms
             </span>
           </button>
@@ -468,7 +490,9 @@ ${analysis.target_search_queries.map((q) => `- "${q.query}" [${q.platforms.join(
           >
             <Sliders size={15} />
             <span>03. SEO Improvement</span>
-            <span className={`px-1.5 py-0.5 rounded text-[10px] ${activeTab === "seo" ? "bg-white/20 text-white" : "bg-[#F1F3FF] text-[#454655]"}`}>
+            <span
+              className={`px-1.5 py-0.5 rounded text-[10px] ${activeTab === "seo" ? "bg-white/20 text-white" : "bg-[#F1F3FF] text-[#454655]"}`}
+            >
               Diff Ready
             </span>
           </button>
@@ -484,7 +508,9 @@ ${analysis.target_search_queries.map((q) => `- "${q.query}" [${q.platforms.join(
           >
             <Package size={15} />
             <span>04. Top Services</span>
-            <span className={`px-1.5 py-0.5 rounded text-[10px] ${activeTab === "services" ? "bg-white/20 text-white" : "bg-[#F1F3FF] text-[#454655]"}`}>
+            <span
+              className={`px-1.5 py-0.5 rounded text-[10px] ${activeTab === "services" ? "bg-white/20 text-white" : "bg-[#F1F3FF] text-[#454655]"}`}
+            >
               {analysis.top_services.length} Hubs
             </span>
           </button>
@@ -500,7 +526,9 @@ ${analysis.target_search_queries.map((q) => `- "${q.query}" [${q.platforms.join(
           >
             <Users size={15} />
             <span>05. Target Audience</span>
-            <span className={`px-1.5 py-0.5 rounded text-[10px] ${activeTab === "audience" ? "bg-white/20 text-white" : "bg-[#F1F3FF] text-[#454655]"}`}>
+            <span
+              className={`px-1.5 py-0.5 rounded text-[10px] ${activeTab === "audience" ? "bg-white/20 text-white" : "bg-[#F1F3FF] text-[#454655]"}`}
+            >
               3 Personas
             </span>
           </button>
@@ -553,7 +581,11 @@ ${analysis.target_search_queries.map((q) => `- "${q.query}" [${q.platforms.join(
                         <div>
                           <h3 className="font-bold text-sm text-[#141B2C]">{comp.name}</h3>
                           <a
-                            href={comp.website.startsWith("http") ? comp.website : `https://${comp.website}`}
+                            href={
+                              comp.website.startsWith("http")
+                                ? comp.website
+                                : `https://${comp.website}`
+                            }
                             target="_blank"
                             rel="noopener noreferrer"
                             className="font-mono text-xs text-[#757687] hover:text-[#2538D0] flex items-center gap-1"
@@ -569,7 +601,9 @@ ${analysis.target_search_queries.map((q) => `- "${q.query}" [${q.platforms.join(
                     </div>
 
                     <div className="bg-[#F1F3FF] px-3 py-1.5 rounded-lg border border-[#DFE0FF]">
-                      <span className="text-[10px] uppercase font-bold text-[#757687] block">Category Focus</span>
+                      <span className="text-[10px] uppercase font-bold text-[#757687] block">
+                        Category Focus
+                      </span>
                       <p className="text-xs font-bold text-[#141B2C]">{comp.category}</p>
                     </div>
 
@@ -579,7 +613,8 @@ ${analysis.target_search_queries.map((q) => `- "${q.query}" [${q.platforms.join(
                           <PlusCircle size={13} /> Core Strengths
                         </span>
                         <p className="text-[#454655] mt-1 leading-relaxed">
-                          {comp.strengths.join(", ") || "Strong domain presence and market recognition."}
+                          {comp.strengths.join(", ") ||
+                            "Strong domain presence and market recognition."}
                         </p>
                       </div>
 
@@ -588,7 +623,8 @@ ${analysis.target_search_queries.map((q) => `- "${q.query}" [${q.platforms.join(
                           <MinusCircle size={13} /> Weaknesses &amp; Gaps
                         </span>
                         <p className="text-[#454655] mt-1 leading-relaxed">
-                          {comp.gaps.join(", ") || "Complex pricing structure and integration friction."}
+                          {comp.gaps.join(", ") ||
+                            "Complex pricing structure and integration friction."}
                         </p>
                       </div>
 
@@ -596,16 +632,16 @@ ${analysis.target_search_queries.map((q) => `- "${q.query}" [${q.platforms.join(
                         <span className="text-[11px] font-bold text-[#2538D0] uppercase flex items-center gap-1">
                           <Lightbulb size={13} /> Opportunity for {brand.name}
                         </span>
-                        <p className="text-[#141B2C] mt-1 leading-relaxed">
-                          {comp.opportunity}
-                        </p>
+                        <p className="text-[#141B2C] mt-1 leading-relaxed">{comp.opportunity}</p>
                       </div>
                     </div>
                   </div>
 
                   <div className="mt-4 pt-3 border-t border-[#F1F3FF] flex items-center justify-between text-[11px] font-mono text-[#757687]">
                     <span>Positioning:</span>
-                    <span className="text-[#2538D0] font-bold truncate max-w-[180px]">{comp.positioning}</span>
+                    <span className="text-[#2538D0] font-bold truncate max-w-[180px]">
+                      {comp.positioning}
+                    </span>
                   </div>
                 </div>
               ))}
@@ -619,7 +655,8 @@ ${analysis.target_search_queries.map((q) => `- "${q.query}" [${q.platforms.join(
                     Multi-Dimensional Comparison Matrix
                   </h3>
                   <p className="text-xs text-[#757687]">
-                    Direct feature and strategic parity alignment extracted from live competitive landing pages.
+                    Direct feature and strategic parity alignment extracted from live competitive
+                    landing pages.
                   </p>
                 </div>
                 <span className="text-[10px] font-mono uppercase bg-white px-2 py-1 rounded text-[#454655] border border-[#DFE0FF]">
@@ -636,36 +673,50 @@ ${analysis.target_search_queries.map((q) => `- "${q.query}" [${q.platforms.join(
                         {brand.name} (Analyzed Brand)
                       </th>
                       {analysis.competitor_analysis.competitors.slice(0, 3).map((c, i) => (
-                        <th key={i} className="py-3 px-4">{c.name}</th>
+                        <th key={i} className="py-3 px-4">
+                          {c.name}
+                        </th>
                       ))}
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-[#F1F3FF] text-[#141B2C]">
                     <tr className="hover:bg-[#F9F9FF]">
-                      <td className="py-3 px-4 font-semibold text-[#757687]">Primary Target Segment</td>
+                      <td className="py-3 px-4 font-semibold text-[#757687]">
+                        Primary Target Segment
+                      </td>
                       <td className="py-3 px-4 bg-[#2538D0]/5 font-bold text-[#2538D0]">
                         Mid-Market to Enterprise
                       </td>
                       {analysis.competitor_analysis.competitors.slice(0, 3).map((c, i) => (
-                        <td key={i} className="py-3 px-4">{c.positioning || "Enterprise"}</td>
+                        <td key={i} className="py-3 px-4">
+                          {c.positioning || "Enterprise"}
+                        </td>
                       ))}
                     </tr>
                     <tr className="hover:bg-[#F9F9FF]">
-                      <td className="py-3 px-4 font-semibold text-[#757687]">Core Architectural Focus</td>
+                      <td className="py-3 px-4 font-semibold text-[#757687]">
+                        Core Architectural Focus
+                      </td>
                       <td className="py-3 px-4 bg-[#2538D0]/5 font-bold text-[#2538D0]">
                         Unified Platform Suite
                       </td>
                       {analysis.competitor_analysis.competitors.slice(0, 3).map((c, i) => (
-                        <td key={i} className="py-3 px-4">{c.category}</td>
+                        <td key={i} className="py-3 px-4">
+                          {c.category}
+                        </td>
                       ))}
                     </tr>
                     <tr className="hover:bg-[#F9F9FF]">
-                      <td className="py-3 px-4 font-semibold text-[#757687]">Primary Differentiation</td>
+                      <td className="py-3 px-4 font-semibold text-[#757687]">
+                        Primary Differentiation
+                      </td>
                       <td className="py-3 px-4 bg-[#2538D0]/5 font-bold text-[#2538D0]">
                         Modern, frictionless developer experience
                       </td>
                       {analysis.competitor_analysis.competitors.slice(0, 3).map((c, i) => (
-                        <td key={i} className="py-3 px-4">{c.strengths[0] || "Established Ecosystem"}</td>
+                        <td key={i} className="py-3 px-4">
+                          {c.strengths[0] || "Established Ecosystem"}
+                        </td>
                       ))}
                     </tr>
                   </tbody>
@@ -691,7 +742,8 @@ ${analysis.target_search_queries.map((q) => `- "${q.query}" [${q.platforms.join(
                   Target Search Queries &amp; Discovery Channels
                 </h2>
                 <p className="text-xs sm:text-sm text-[#454655] max-w-3xl mt-1 leading-relaxed">
-                  Five intent-mapped search queries structured for high-intent customer acquisition across Google, LinkedIn, X, Meta, and Instagram.
+                  Five intent-mapped search queries structured for high-intent customer acquisition
+                  across Google, LinkedIn, X, Meta, and Instagram.
                 </p>
               </div>
               <div className="flex items-center gap-2 bg-[#F1F3FF] px-3.5 py-2 rounded-xl border border-[#DFE0FF]">
@@ -724,11 +776,11 @@ ${analysis.target_search_queries.map((q) => `- "${q.query}" [${q.platforms.join(
                           {q.audience}
                         </span>
                       </div>
-                      <p className="text-xs text-[#454655] leading-relaxed">
-                        {q.relevance}
-                      </p>
+                      <p className="text-xs text-[#454655] leading-relaxed">{q.relevance}</p>
                       <div className="flex items-center gap-1.5 pt-1 flex-wrap">
-                        <span className="text-[10px] font-bold uppercase text-[#757687]">Platforms:</span>
+                        <span className="text-[10px] font-bold uppercase text-[#757687]">
+                          Platforms:
+                        </span>
                         {q.platforms.map((plat) => (
                           <span
                             key={plat}
@@ -780,7 +832,8 @@ ${analysis.target_search_queries.map((q) => `- "${q.query}" [${q.platforms.join(
                   SEO Improvements &amp; Technical Metadata Audit
                 </h2>
                 <p className="text-xs sm:text-sm text-[#454655] max-w-3xl mt-1 leading-relaxed">
-                  Before-and-after search snippet recommendations engineered to maximize Google SERP click-through rates.
+                  Before-and-after search snippet recommendations engineered to maximize Google SERP
+                  click-through rates.
                 </p>
               </div>
               <div className="flex items-center gap-2 bg-[#F1F3FF] px-3.5 py-2 rounded-xl border border-[#DFE0FF]">
@@ -804,7 +857,8 @@ ${analysis.target_search_queries.map((q) => `- "${q.query}" [${q.platforms.join(
                     </span>
                   </div>
                   <div className="font-mono text-xs text-[#141B2C] bg-[#FFDAD6]/30 p-3.5 rounded-xl border border-[#FFDAD6]">
-                    {analysis.seo_improvements.current_title || "No title tag detected in target HTML"}
+                    {analysis.seo_improvements.current_title ||
+                      "No title tag detected in target HTML"}
                   </div>
                 </div>
                 <div className="pt-3 mt-3 text-xs text-[#757687]">
@@ -827,7 +881,8 @@ ${analysis.target_search_queries.map((q) => `- "${q.query}" [${q.platforms.join(
                   </div>
                 </div>
                 <div className="pt-3 mt-3 text-xs text-[#454655]">
-                  <strong className="text-[#141B2C]">Reason:</strong> {analysis.seo_improvements.title_reason}
+                  <strong className="text-[#141B2C]">Reason:</strong>{" "}
+                  {analysis.seo_improvements.title_reason}
                 </div>
               </div>
             </div>
@@ -845,7 +900,8 @@ ${analysis.target_search_queries.map((q) => `- "${q.query}" [${q.platforms.join(
                     </span>
                   </div>
                   <div className="text-xs text-[#141B2C] bg-[#FFDAD6]/30 p-3.5 rounded-xl border border-[#FFDAD6] leading-relaxed">
-                    {analysis.seo_improvements.current_meta_description || "No meta description tag provided by apex domain."}
+                    {analysis.seo_improvements.current_meta_description ||
+                      "No meta description tag provided by apex domain."}
                   </div>
                 </div>
                 <div className="pt-3 mt-3 text-xs text-[#757687]">
@@ -860,7 +916,8 @@ ${analysis.target_search_queries.map((q) => `- "${q.query}" [${q.platforms.join(
                       Recommended Meta Description
                     </span>
                     <span className="font-mono text-xs text-[#005A4A] font-bold">
-                      {analysis.seo_improvements.recommended_meta_description.length} chars (Target: 140-160)
+                      {analysis.seo_improvements.recommended_meta_description.length} chars (Target:
+                      140-160)
                     </span>
                   </div>
                   <div className="text-xs text-[#005A4A] font-medium bg-[#83F7D9]/20 p-3.5 rounded-xl border border-[#83F7D9] leading-relaxed">
@@ -868,23 +925,33 @@ ${analysis.target_search_queries.map((q) => `- "${q.query}" [${q.platforms.join(
                   </div>
                 </div>
                 <div className="pt-3 mt-3 text-xs text-[#454655]">
-                  <strong className="text-[#141B2C]">Summary:</strong> {analysis.seo_improvements.business_summary}
+                  <strong className="text-[#141B2C]">Summary:</strong>{" "}
+                  {analysis.seo_improvements.business_summary}
                 </div>
               </div>
             </div>
 
             {/* Technical Findings Checklist */}
             <div className="bg-white rounded-2xl p-6 border border-[#E5E7EF] shadow-xs">
-              <h3 className="font-bold text-sm text-[#141B2C] mb-3">Technical Crawler Audit Findings</h3>
+              <h3 className="font-bold text-sm text-[#141B2C] mb-3">
+                Technical Crawler Audit Findings
+              </h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                 {analysis.seo_improvements.technical_findings?.map((tf, i) => (
-                  <div key={i} className="p-3 rounded-xl bg-[#F1F3FF] border border-[#DFE0FF] flex flex-col justify-between">
+                  <div
+                    key={i}
+                    className="p-3 rounded-xl bg-[#F1F3FF] border border-[#DFE0FF] flex flex-col justify-between"
+                  >
                     <div>
                       <div className="flex items-center justify-between mb-1">
                         <span className="text-[11px] font-bold text-[#141B2C]">{tf.name}</span>
-                        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
-                          tf.status === "present" ? "bg-[#83F7D9] text-[#005A4A]" : "bg-[#FFDAD6] text-[#93000A]"
-                        }`}>
+                        <span
+                          className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
+                            tf.status === "present"
+                              ? "bg-[#83F7D9] text-[#005A4A]"
+                              : "bg-[#FFDAD6] text-[#93000A]"
+                          }`}
+                        >
                           {tf.status}
                         </span>
                       </div>
@@ -917,7 +984,8 @@ ${analysis.target_search_queries.map((q) => `- "${q.query}" [${q.platforms.join(
                   Core Offerings &amp; Service Taxonomies
                 </h2>
                 <p className="text-xs sm:text-sm text-[#454655] max-w-3xl mt-1 leading-relaxed">
-                  Discrete services and software modules extracted from target marketing collateral and navigation hierarchies.
+                  Discrete services and software modules extracted from target marketing collateral
+                  and navigation hierarchies.
                 </p>
               </div>
               <div className="flex items-center gap-2 bg-[#F1F3FF] px-3.5 py-2 rounded-xl border border-[#DFE0FF]">
@@ -947,23 +1015,27 @@ ${analysis.target_search_queries.map((q) => `- "${q.query}" [${q.platforms.join(
                       </span>
                     </div>
 
-                    <p className="text-xs text-[#454655] leading-relaxed">
-                      {svc.description}
-                    </p>
+                    <p className="text-xs text-[#454655] leading-relaxed">{svc.description}</p>
 
                     <div className="grid grid-cols-2 gap-2 pt-2 text-xs">
                       <div className="p-2.5 rounded-lg bg-[#F1F3FF] border border-[#DFE0FF]">
-                        <span className="text-[10px] font-bold uppercase text-[#757687] block">Target Segment</span>
+                        <span className="text-[10px] font-bold uppercase text-[#757687] block">
+                          Target Segment
+                        </span>
                         <span className="font-semibold text-[#141B2C]">{svc.target_customer}</span>
                       </div>
                       <div className="p-2.5 rounded-lg bg-[#F1F3FF] border border-[#DFE0FF]">
-                        <span className="text-[10px] font-bold uppercase text-[#757687] block">Target Industry</span>
+                        <span className="text-[10px] font-bold uppercase text-[#757687] block">
+                          Target Industry
+                        </span>
                         <span className="font-semibold text-[#141B2C]">{svc.target_industry}</span>
                       </div>
                     </div>
 
                     <div className="p-3 rounded-xl bg-[#83F7D9]/20 border border-[#83F7D9]">
-                      <span className="text-[10px] font-bold uppercase text-[#005A4A] block">Value Proposition</span>
+                      <span className="text-[10px] font-bold uppercase text-[#005A4A] block">
+                        Value Proposition
+                      </span>
                       <p className="text-xs text-[#005A4A] font-medium mt-0.5">{svc.benefit}</p>
                     </div>
                   </div>
@@ -995,7 +1067,8 @@ ${analysis.target_search_queries.map((q) => `- "${q.query}" [${q.platforms.join(
                   Target Audience Archetypes &amp; Pain Points
                 </h2>
                 <p className="text-xs sm:text-sm text-[#454655] max-w-3xl mt-1 leading-relaxed">
-                  Persona archetypes detailing critical organizational pain points, job titles, and conversion triggers.
+                  Persona archetypes detailing critical organizational pain points, job titles, and
+                  conversion triggers.
                 </p>
               </div>
               <div className="flex items-center gap-2 bg-[#F1F3FF] px-3.5 py-2 rounded-xl border border-[#DFE0FF]">
@@ -1030,7 +1103,9 @@ ${analysis.target_search_queries.map((q) => `- "${q.query}" [${q.platforms.join(
 
                     <div className="flex flex-col gap-2 text-xs">
                       <div>
-                        <span className="text-[10px] font-bold uppercase text-[#005A4A] block">Critical Needs</span>
+                        <span className="text-[10px] font-bold uppercase text-[#005A4A] block">
+                          Critical Needs
+                        </span>
                         <ul className="mt-1 list-disc list-inside space-y-0.5 text-[#454655]">
                           {prof.needs.slice(0, 3).map((need, i) => (
                             <li key={i}>{need}</li>
@@ -1039,7 +1114,9 @@ ${analysis.target_search_queries.map((q) => `- "${q.query}" [${q.platforms.join(
                       </div>
 
                       <div className="pt-2">
-                        <span className="text-[10px] font-bold uppercase text-[#BA1A1A] block">Organizational Challenges</span>
+                        <span className="text-[10px] font-bold uppercase text-[#BA1A1A] block">
+                          Organizational Challenges
+                        </span>
                         <ul className="mt-1 list-disc list-inside space-y-0.5 text-[#454655]">
                           {prof.challenges.slice(0, 3).map((chal, i) => (
                             <li key={i}>{chal}</li>
@@ -1048,16 +1125,16 @@ ${analysis.target_search_queries.map((q) => `- "${q.query}" [${q.platforms.join(
                       </div>
 
                       <div className="mt-2 p-3 rounded-xl bg-[#F1F3FF] border border-[#DFE0FF]">
-                        <span className="text-[10px] font-bold uppercase text-[#2538D0] block">Conversion Trigger</span>
+                        <span className="text-[10px] font-bold uppercase text-[#2538D0] block">
+                          Conversion Trigger
+                        </span>
                         <p className="text-xs text-[#141B2C] mt-1">{prof.opportunity}</p>
                       </div>
                     </div>
                   </div>
                 </div>
               )) || (
-                <div className="col-span-3 text-xs text-[#757687]">
-                  Audience segments analyzed.
-                </div>
+                <div className="col-span-3 text-xs text-[#757687]">Audience segments analyzed.</div>
               )}
             </div>
           </div>
@@ -1071,8 +1148,15 @@ ${analysis.target_search_queries.map((q) => `- "${q.query}" [${q.platforms.join(
             <Award size={18} />
           </div>
           <div>
-            <div className="font-bold text-[#141B2C]">Dxora Practical Test Evaluation Certificate</div>
-            <div>Signed SHA-256 seal: <code className="font-mono text-[#2538D0]">e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855</code></div>
+            <div className="font-bold text-[#141B2C]">
+              Dxora Practical Test Evaluation Certificate
+            </div>
+            <div>
+              Signed SHA-256 seal:{" "}
+              <code className="font-mono text-[#2538D0]">
+                e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+              </code>
+            </div>
           </div>
         </div>
         <div className="font-mono text-xs text-right">

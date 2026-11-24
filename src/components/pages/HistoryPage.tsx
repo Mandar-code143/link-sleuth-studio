@@ -16,11 +16,7 @@ import {
   Clock,
   Layers,
 } from "lucide-react";
-import {
-  readHistory,
-  deleteReportById,
-  type HistoryEntry,
-} from "@/lib/linkintel";
+import { readHistory, deleteReport, type HistoryEntry } from "@/lib/linkintel";
 
 export function HistoryPage() {
   const navigate = useNavigate();
@@ -37,7 +33,7 @@ export function HistoryPage() {
   const handleDelete = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
     if (confirm("Are you sure you want to remove this intelligence report?")) {
-      deleteReportById(id);
+      deleteReport(id);
       setHistory(readHistory());
     }
   };
@@ -104,7 +100,8 @@ export function HistoryPage() {
             Your intelligence archive.
           </h1>
           <p className="text-xs sm:text-sm text-[#454655] leading-relaxed">
-            Revisit websites you've previously analysed. Reports are stored locally in your browser workspace.
+            Revisit websites you've previously analysed. Reports are stored locally in your browser
+            workspace.
           </p>
         </div>
 
@@ -131,7 +128,10 @@ export function HistoryPage() {
       {/* Search, Filter & Sort Toolbar */}
       <div className="bg-white rounded-2xl p-4 sm:p-5 border border-[#E5E7EF] shadow-xs flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
         <div className="relative flex-1 min-w-0">
-          <Search size={16} className="text-[#757687] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+          <Search
+            size={16}
+            className="text-[#757687] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none"
+          />
           <input
             type="text"
             value={searchTerm}
@@ -167,7 +167,9 @@ export function HistoryPage() {
           {/* Sort order */}
           <select
             value={sortOrder}
-            onChange={(e: any) => setSortOrder(e.target.value)}
+            onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
+              setSortOrder(e.target.value as "newest" | "oldest" | "az")
+            }
             className="bg-[#F1F3FF] hover:bg-[#E9EDFF] text-[#2538D0] font-semibold text-xs rounded-xl px-3 py-2.5 outline-none border border-[#DFE0FF] cursor-pointer"
           >
             <option value="newest">Newest First</option>
@@ -232,13 +234,18 @@ export function HistoryPage() {
                         </div>
                       </td>
 
-                      <td className="py-4 px-4 text-[#454655] font-medium">
-                        {entry.category}
-                      </td>
+                      <td className="py-4 px-4 text-[#454655] font-medium">{entry.category}</td>
 
                       <td className="py-4 px-4 font-mono text-xs text-[#757687] whitespace-nowrap">
                         {new Date(entry.analyzedAt).toLocaleDateString()}{" "}
-                        <span>({new Date(entry.analyzedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })})</span>
+                        <span>
+                          (
+                          {new Date(entry.analyzedAt).toLocaleTimeString([], {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                          )
+                        </span>
                       </td>
 
                       <td className="py-4 px-4 whitespace-nowrap">
@@ -298,10 +305,13 @@ export function HistoryPage() {
                         <Database size={24} />
                       </div>
                       <div className="font-bold text-sm text-[#141B2C]">
-                        {searchTerm ? "No reports match your search query." : "No analysis reports in archive yet."}
+                        {searchTerm
+                          ? "No reports match your search query."
+                          : "No analysis reports in archive yet."}
                       </div>
                       <p className="text-xs text-[#757687] max-w-sm">
-                        Submit a business website from Overview or Analyze page to generate your first structured report.
+                        Submit a business website from Overview or Analyze page to generate your
+                        first structured report.
                       </p>
                       <Link
                         to="/analyze"

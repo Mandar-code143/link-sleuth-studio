@@ -15,25 +15,51 @@ from sqlalchemy import (
     String,
     Text,
     create_engine,
+    text,
 )
 from sqlalchemy.orm import declarative_base, sessionmaker, Session
 
 from app.config import settings, BACKEND_DIR
+from app.utils.logging import logger
 
-# Determine and normalize DB URL
-db_url = settings.database_url
-if db_url.startswith("sqlite:///./"):
-    # Resolve relative to backend directory so db location is consistent
-    db_filename = db_url.replace("sqlite:///./", "")
-    resolved_path = (BACKEND_DIR / db_filename).resolve()
-    resolved_path.parent.mkdir(parents=True, exist_ok=True)
-    engine_url = f"sqlite:///{resolved_path}"
+def normalize_db_url(url: str) -> str:
+    """Normalizes database URLs for SQLite (relative paths) and PostgreSQL (Render driver compatibility)."""
+    clean = (url or "").strip()
+    if clean.startswith("postgres://"):
+        return clean.replace("postgres://", "postgresql+psycopg2://", 1)
+    if clean.startswith("postgresql://") and "+psycopg2" not in clean and "+" not in clean[:15]:
+        return clean.replace("postgresql://", "postgresql+psycopg2://", 1)
+    if clean.startswith("sqlite:///./"):
+        # Resolve relative to backend directory so db location is consistent
+        db_filename = clean.replace("sqlite:///./", "")
+        resolved_path = (BACKEND_DIR / db_filename).resolve()
+        resolved_path.parent.mkdir(parents=True, exist_ok=True)
+        return f"sqlite:///{resolved_path}"
+    return clean
+
+engine_url = normalize_db_url(settings.database_url)
+
+# Production verification: log prominent alert if SQLite is configured in production
+if settings.app_env.lower() in ("production", "prod") and engine_url.startswith("sqlite"):
+    logger.warning(
+        "CRITICAL PERSISTENCE ALERT: Backend is running in production with an ephemeral SQLite database! "
+        "Render instances do not persist disk state across deploys or container restarts. "
+        "Configure DATABASE_URL to point to Render PostgreSQL (e.g. postgresql://user:pass@host/db)."
+    )
+
+if engine_url.startswith("sqlite"):
+    connect_args = {"check_same_thread": False}
+    engine = create_engine(engine_url, connect_args=connect_args)
 else:
-    engine_url = db_url
+    # Hardened PostgreSQL connection pool for Render
+    engine = create_engine(
+        engine_url,
+        pool_pre_ping=True,  # Proactively test connections before checkout to avoid idle timeout drops
+        pool_recycle=300,   # Recycle connections every 5 minutes to prevent stale sockets on Render
+        pool_size=10,       # Base connection pool size
+        max_overflow=20,    # Max burst connections under load
+    )
 
-connect_args = {"check_same_thread": False} if engine_url.startswith("sqlite") else {}
-
-engine = create_engine(engine_url, connect_args=connect_args)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
@@ -110,7 +136,24 @@ class BenchmarkRecord(Base):
 
 def init_db() -> None:
     """Creates database tables if they do not exist."""
-    Base.metadata.create_all(bind=engine)
+    try:
+        Base.metadata.create_all(bind=engine)
+        logger.info(f"Database schema initialized successfully with engine dialect '{engine.dialect.name}'.")
+    except Exception as exc:
+        logger.error(f"Failed to initialize database tables: {exc}", exc_info=True)
+        if settings.app_env.lower() in ("production", "prod"):
+            raise
+
+
+def check_db_health() -> bool:
+    """Executes a lightweight query to verify active database connectivity."""
+    try:
+        with engine.connect() as conn:
+            conn.execute(text("SELECT 1"))
+        return True
+    except Exception as exc:
+        logger.warning(f"Database health check failed: {exc}")
+        return False
 
 
 def get_db() -> Generator[Session, None, None]:

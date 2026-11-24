@@ -37,8 +37,8 @@ export function ModelLabPage() {
 
   useEffect(() => {
     let active = true;
-    void fetchProviderStatus(preferences.apiBaseUrl).then((items) => {
-      if (active) setProviders(items);
+    void fetchProviderStatus(preferences.apiBaseUrl).then((res) => {
+      if (active && res && Array.isArray(res.providers)) setProviders(res.providers);
     });
     return () => {
       active = false;
@@ -48,11 +48,10 @@ export function ModelLabPage() {
   const handleRunBenchmark = async () => {
     setIsRunning(true);
     try {
-      const resp = await runModelBenchmark(
-        benchmarkUrl,
-        ["gemini", "openai", "anthropic"],
-        preferences
-      );
+      const resp = await runModelBenchmark(preferences.apiBaseUrl, {
+        url: benchmarkUrl,
+        providers: ["gemini", "openai", "anthropic"],
+      });
       setBenchmarkData(resp);
       setRunId(resp.benchmark_id);
     } catch {
@@ -70,9 +69,27 @@ export function ModelLabPage() {
       mode,
       timestamp: new Date().toISOString(),
       evaluation_matrix: [
-        { model: "gemini-2.5-flash", latency: "0.42s", cost_per_1k: "$0.35", schema_pass: "100%", quality: 9.4 },
-        { model: "gpt-4o-mini", latency: "1.28s", cost_per_1k: "$0.68", schema_pass: "100%", quality: 9.2 },
-        { model: "claude-3-5-haiku", latency: "1.45s", cost_per_1k: "$4.48", schema_pass: "100%", quality: 9.1 },
+        {
+          model: "gemini-2.5-flash",
+          latency: "0.42s",
+          cost_per_1k: "$0.35",
+          schema_pass: "100%",
+          quality: 9.4,
+        },
+        {
+          model: "gpt-4o-mini",
+          latency: "1.28s",
+          cost_per_1k: "$0.68",
+          schema_pass: "100%",
+          quality: 9.2,
+        },
+        {
+          model: "claude-3-5-haiku",
+          latency: "1.45s",
+          cost_per_1k: "$4.48",
+          schema_pass: "100%",
+          quality: 9.1,
+        },
       ],
     };
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
@@ -106,7 +123,9 @@ export function ModelLabPage() {
           </h1>
 
           <p className="text-sm sm:text-base text-[#454655] leading-relaxed">
-            Empirical comparison of supported foundational LLMs across response latency, token efficiency, API cost economics, structured Pydantic schema validation, and 5-section intelligence completeness.
+            Empirical comparison of supported foundational LLMs across response latency, token
+            efficiency, API cost economics, structured Pydantic schema validation, and 5-section
+            intelligence completeness.
           </p>
         </div>
 
@@ -186,15 +205,23 @@ export function ModelLabPage() {
             </div>
 
             <div className="p-3 rounded-xl bg-[#F1F3FF] border border-[#DFE0FF] flex flex-col gap-1 text-xs">
-              <span className="text-[10px] uppercase font-bold text-[#757687]">API Cost Tier (&lt;128k prompt)</span>
+              <span className="text-[10px] uppercase font-bold text-[#757687]">
+                API Cost Tier (&lt;128k prompt)
+              </span>
               <div className="flex items-center justify-between font-mono text-xs text-[#141B2C]">
-                <span>Input: <strong className="text-[#2538D0]">$0.075</strong> / 1M</span>
-                <span>Output: <strong className="text-[#2538D0]">$0.30</strong> / 1M</span>
+                <span>
+                  Input: <strong className="text-[#2538D0]">$0.075</strong> / 1M
+                </span>
+                <span>
+                  Output: <strong className="text-[#2538D0]">$0.30</strong> / 1M
+                </span>
               </div>
             </div>
 
             <p className="text-xs text-[#454655] bg-[#F1F3FF]/50 p-3 rounded-xl border border-[#DFE0FF] leading-relaxed">
-              <strong className="text-[#141B2C]">Benchmark Verdict:</strong> Fastest response time (~0.42s avg) &amp; highest cost efficiency for automated batch crawling and bulk domain ingestion.
+              <strong className="text-[#141B2C]">Benchmark Verdict:</strong> Fastest response time
+              (~0.42s avg) &amp; highest cost efficiency for automated batch crawling and bulk
+              domain ingestion.
             </p>
           </div>
           <div className="pt-3 mt-4 border-t border-[#F1F3FF] flex items-center justify-between text-[11px] text-[#757687]">
@@ -238,15 +265,22 @@ export function ModelLabPage() {
             </div>
 
             <div className="p-3 rounded-xl bg-[#F1F3FF] border border-[#DFE0FF] flex flex-col gap-1 text-xs">
-              <span className="text-[10px] uppercase font-bold text-[#757687]">API Cost Tier (&lt;128k prompt)</span>
+              <span className="text-[10px] uppercase font-bold text-[#757687]">
+                API Cost Tier (&lt;128k prompt)
+              </span>
               <div className="flex items-center justify-between font-mono text-xs text-[#141B2C]">
-                <span>Input: <strong className="text-[#5566EF]">$0.15</strong> / 1M</span>
-                <span>Output: <strong className="text-[#5566EF]">$0.60</strong> / 1M</span>
+                <span>
+                  Input: <strong className="text-[#5566EF]">$0.15</strong> / 1M
+                </span>
+                <span>
+                  Output: <strong className="text-[#5566EF]">$0.60</strong> / 1M
+                </span>
               </div>
             </div>
 
             <p className="text-xs text-[#454655] bg-[#F1F3FF]/50 p-3 rounded-xl border border-[#DFE0FF] leading-relaxed">
-              <strong className="text-[#141B2C]">Benchmark Verdict:</strong> Industry-standard general knowledge &amp; schema reliability. Ideal secondary cross-validation partner.
+              <strong className="text-[#141B2C]">Benchmark Verdict:</strong> Industry-standard
+              general knowledge &amp; schema reliability. Ideal secondary cross-validation partner.
             </p>
           </div>
           <div className="pt-3 mt-4 border-t border-[#F1F3FF] flex items-center justify-between text-[11px] text-[#757687]">
@@ -290,15 +324,22 @@ export function ModelLabPage() {
             </div>
 
             <div className="p-3 rounded-xl bg-[#F1F3FF] border border-[#DFE0FF] flex flex-col gap-1 text-xs">
-              <span className="text-[10px] uppercase font-bold text-[#757687]">API Cost Tier (&lt;128k prompt)</span>
+              <span className="text-[10px] uppercase font-bold text-[#757687]">
+                API Cost Tier (&lt;128k prompt)
+              </span>
               <div className="flex items-center justify-between font-mono text-xs text-[#141B2C]">
-                <span>Input: <strong className="text-[#141B2C]">$0.80</strong> / 1M</span>
-                <span>Output: <strong className="text-[#141B2C]">$4.00</strong> / 1M</span>
+                <span>
+                  Input: <strong className="text-[#141B2C]">$0.80</strong> / 1M
+                </span>
+                <span>
+                  Output: <strong className="text-[#141B2C]">$4.00</strong> / 1M
+                </span>
               </div>
             </div>
 
             <p className="text-xs text-[#454655] bg-[#F1F3FF]/50 p-3 rounded-xl border border-[#DFE0FF] leading-relaxed">
-              <strong className="text-[#141B2C]">Benchmark Verdict:</strong> High-precision natural language understanding and nuanced tone extraction, with slightly higher pricing tier.
+              <strong className="text-[#141B2C]">Benchmark Verdict:</strong> High-precision natural
+              language understanding and nuanced tone extraction, with slightly higher pricing tier.
             </p>
           </div>
           <div className="pt-3 mt-4 border-t border-[#F1F3FF] flex items-center justify-between text-[11px] text-[#757687]">
@@ -316,7 +357,8 @@ export function ModelLabPage() {
               Multi-Model Test Rig
             </h2>
             <p className="text-xs sm:text-sm text-[#454655]">
-              Simultaneously dispatches extraction payloads to configured provider endpoints to record latency, cost, and schema fidelity.
+              Simultaneously dispatches extraction payloads to configured provider endpoints to
+              record latency, cost, and schema fidelity.
             </p>
           </div>
           <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#83F7D9]/30 text-[#005A4A] text-xs font-mono font-semibold">
@@ -543,7 +585,10 @@ export function ModelLabPage() {
         <div className="p-4 rounded-xl bg-[#F1F3FF] border border-[#DFE0FF] text-xs text-[#454655] leading-relaxed flex items-start gap-3 mt-2">
           <Info size={16} className="text-[#2538D0] shrink-0 mt-0.5" />
           <div>
-            <strong className="text-[#141B2C]">Architectural Conclusion:</strong> Gemini 2.5 Flash delivers an 92% cost reduction compared to Claude 3.5 Haiku while providing sub-500ms token generation and native JSON schema validation. LinkIntel AI defaults to Gemini 2.5 Flash for production workloads.
+            <strong className="text-[#141B2C]">Architectural Conclusion:</strong> Gemini 2.5 Flash
+            delivers an 92% cost reduction compared to Claude 3.5 Haiku while providing sub-500ms
+            token generation and native JSON schema validation. LinkIntel AI defaults to Gemini 2.5
+            Flash for production workloads.
           </div>
         </div>
       </div>

@@ -56,11 +56,11 @@ export function OverviewPage() {
     if (!url.trim()) return;
     navigate({
       to: "/analyze",
-      search: { url: url.trim() } as any,
+      search: { url: url.trim() } as Record<string, unknown>,
     });
   };
 
-  const isConnected = apiHealth?.ok ?? (preferences.mode === "demo");
+  const isConnected = apiHealth?.ok ?? preferences.mode === "demo";
   const latencyDisplay = apiHealth ? `${apiHealth.latencyMs}ms` : "14ms";
 
   return (
@@ -86,7 +86,8 @@ export function OverviewPage() {
           </h1>
 
           <p className="text-base sm:text-lg text-[#454655] font-['Inter',sans-serif] max-w-3xl leading-relaxed">
-            Analyze any public business website and uncover its competitive landscape, search opportunities, SEO improvements, services, and customer segments.
+            Analyze any public business website and uncover its competitive landscape, search
+            opportunities, SEO improvements, services, and customer segments.
           </p>
 
           <div className="flex flex-wrap items-center gap-3 pt-2">
@@ -145,10 +146,7 @@ export function OverviewPage() {
 
           <form onSubmit={handleRunAnalysis} className="flex flex-col sm:flex-row gap-3">
             <div className="relative flex-1 flex items-center">
-              <Search
-                size={18}
-                className="absolute left-3.5 text-[#757687] pointer-events-none"
-              />
+              <Search size={18} className="absolute left-3.5 text-[#757687] pointer-events-none" />
               <input
                 id="url-input"
                 type="url"
@@ -212,7 +210,8 @@ export function OverviewPage() {
               </button>
             </div>
             <p className="text-xs text-[#757687] italic">
-              Direct public content extraction and structured AI analysis via unified schema pipeline.
+              Direct public content extraction and structured AI analysis via unified schema
+              pipeline.
             </p>
           </div>
         </div>
@@ -373,7 +372,8 @@ export function OverviewPage() {
             </h2>
           </div>
           <p className="text-xs sm:text-sm text-[#454655] max-w-md">
-            Every analysis pipeline extracts raw DOM content and generates standardized JSON payloads covering all recruitment benchmark requirements.
+            Every analysis pipeline extracts raw DOM content and generates standardized JSON
+            payloads covering all recruitment benchmark requirements.
           </p>
         </div>
 
@@ -389,7 +389,8 @@ export function OverviewPage() {
               </div>
               <h3 className="font-bold text-sm text-[#141B2C] mb-1.5">Competitor Intelligence</h3>
               <p className="text-xs text-[#454655] leading-relaxed mb-4">
-                Discover rival positioning, market gaps, competitive advantages, and evidence classifications (Verified, Extracted, Inferred).
+                Discover rival positioning, market gaps, competitive advantages, and evidence
+                classifications (Verified, Extracted, Inferred).
               </p>
             </div>
             <div className="pt-2 border-t border-[#F1F3FF]">
@@ -414,7 +415,8 @@ export function OverviewPage() {
               </div>
               <h3 className="font-bold text-sm text-[#141B2C] mb-1.5">Search Query Discovery</h3>
               <p className="text-xs text-[#454655] leading-relaxed mb-4">
-                Uncover exactly 5 cross-platform search queries tailored across Google, LinkedIn, X, Meta, and Instagram for multi-channel targeting.
+                Uncover exactly 5 cross-platform search queries tailored across Google, LinkedIn, X,
+                Meta, and Instagram for multi-channel targeting.
               </p>
             </div>
             <div className="pt-2 border-t border-[#F1F3FF]">
@@ -443,7 +445,8 @@ export function OverviewPage() {
               </div>
               <h3 className="font-bold text-sm text-[#141B2C] mb-1.5">SEO Improvement</h3>
               <p className="text-xs text-[#454655] leading-relaxed mb-4">
-                Title and meta before/after audit, priority recommendations, pixel length boundaries, and actionable technical findings.
+                Title and meta before/after audit, priority recommendations, pixel length
+                boundaries, and actionable technical findings.
               </p>
             </div>
             <div className="pt-2 border-t border-[#F1F3FF]">
@@ -468,7 +471,8 @@ export function OverviewPage() {
               </div>
               <h3 className="font-bold text-sm text-[#141B2C] mb-1.5">Service Discovery</h3>
               <p className="text-xs text-[#454655] leading-relaxed mb-4">
-                Extract core offerings, structured service packages, target customer segments, and clear value propositions.
+                Extract core offerings, structured service packages, target customer segments, and
+                clear value propositions.
               </p>
             </div>
             <div className="pt-2 border-t border-[#F1F3FF]">
@@ -493,7 +497,8 @@ export function OverviewPage() {
               </div>
               <h3 className="font-bold text-sm text-[#141B2C] mb-1.5">Target Audience</h3>
               <p className="text-xs text-[#454655] leading-relaxed mb-4">
-                Persona archetypes, critical pain points, conversion triggers, buyer challenges, and optimized messaging angles.
+                Persona archetypes, critical pain points, conversion triggers, buyer challenges, and
+                optimized messaging angles.
               </p>
             </div>
             <div className="pt-2 border-t border-[#F1F3FF]">
@@ -748,7 +753,12 @@ export function OverviewPage() {
                       <td className="py-3.5 px-4 text-xs font-mono text-[#454655]">
                         {new Date(entry.analyzedAt).toLocaleDateString()}{" "}
                         <span className="text-[#757687]">
-                          ({new Date(entry.analyzedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })})
+                          (
+                          {new Date(entry.analyzedAt).toLocaleTimeString([], {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                          )
                         </span>
                       </td>
                       <td className="py-3.5 px-4">
@@ -796,7 +806,9 @@ export function OverviewPage() {
                       </div>
                       <div>
                         <div className="font-bold text-sm text-[#141B2C]">HubSpot CRM Platform</div>
-                        <div className="font-mono text-xs text-[#757687]">https://www.hubspot.com/</div>
+                        <div className="font-mono text-xs text-[#757687]">
+                          https://www.hubspot.com/
+                        </div>
                       </div>
                     </div>
                   </td>

@@ -339,9 +339,7 @@ export function WorkstationShell({
         </header>
 
         {/* Workstation Page Content Area */}
-        <main className="flex-1 pb-24 md:pb-12 w-full">
-          {children}
-        </main>
+        <main className="flex-1 pb-24 md:pb-12 w-full">{children}</main>
       </div>
 
       {/* Mobile Fixed Bottom Navigation Bar (Stitch Precision) */}

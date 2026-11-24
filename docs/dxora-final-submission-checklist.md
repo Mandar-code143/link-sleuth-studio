@@ -5,7 +5,7 @@
 **Branch:** `main`  
 **Evaluation Target:** Dxora Technologies Python Practical Test — Link Analysis  
 **Submission Deadline:** 27 November 2026  
-**Final Audit & Verification Date:** 24 November 2026  
+**Final Audit & Verification Date:** 24 November 2026
 
 ---
 
@@ -61,23 +61,25 @@
 
 ## E. Deployment Links
 
-| Service | Deployed Status | Target URL / Placeholder |
-|---|---|---|
-| **FastAPI Backend API** | Ready for cloud deploy | `https://linkintel-api.onrender.com` *(placeholder — deploy via Render)* |
-| **Interactive Swagger Docs** | Ready for cloud deploy | `https://linkintel-api.onrender.com/docs` *(placeholder)* |
-| **Production Frontend UI** | Ready for cloud deploy | `https://link-sleuth-studio.pages.dev` *(placeholder — deploy via Cloudflare/Vercel)* |
-| **Local Development Backend** | Verified live | `http://127.0.0.1:4000` |
-| **Local Development Docs** | Verified live | `http://127.0.0.1:4000/docs` |
-| **Local Development Frontend** | Verified live | `http://localhost:8080` |
+| Service                        | Deployed Status        | Target URL / Placeholder                                                              |
+| ------------------------------ | ---------------------- | ------------------------------------------------------------------------------------- |
+| **FastAPI Backend API**        | Ready for cloud deploy | `https://linkintel-api.onrender.com` _(placeholder — deploy via Render)_              |
+| **Interactive Swagger Docs**   | Ready for cloud deploy | `https://linkintel-api.onrender.com/docs` _(placeholder)_                             |
+| **Production Frontend UI**     | Ready for cloud deploy | `https://link-sleuth-studio.pages.dev` _(placeholder — deploy via Cloudflare/Vercel)_ |
+| **Local Development Backend**  | Verified live          | `http://127.0.0.1:4000`                                                               |
+| **Local Development Docs**     | Verified live          | `http://127.0.0.1:4000/docs`                                                          |
+| **Local Development Frontend** | Verified live          | `http://localhost:8080`                                                               |
 
 ---
 
 ## F. Actual Verified Test Results
 
 ### 1. Backend Pytest Suite
+
 ```bash
 python -m pytest backend/tests -v
 ```
+
 - **Total Tests:** 66
 - **Passed:** 66
 - **Failed:** 0
@@ -94,9 +96,11 @@ python -m pytest backend/tests -v
   - `test_security.py` (25 tests) — Public URLs, scheme validation, embedded credentials, private TLDs, loopback, RFC 1918, IPv6, cloud metadata, DNS validator, DNS rebinding, redirect hops, rate limiting, trusted proxy `X-Forwarded-For`, untrusted peer IP spoofing rejection, workspace cache isolation, pinned network transport.
 
 ### 2. Frontend Vitest Suite
+
 ```bash
 npm test
 ```
+
 - **Total Tests:** 17
 - **Passed:** 17
 - **Failed:** 0
@@ -107,9 +111,11 @@ npm test
   - `app-routing.test.tsx` (12 tests) — Router tree resolution for all 6 core pages across viewports.
 
 ### 3. Production Build
+
 ```bash
 npm run build
 ```
+
 - **Client Environment:** Built in 1.26s (`.output/public`)
 - **SSR Environment:** Built in 524ms
 - **Nitro Worker Environment:** Built in 878ms

@@ -26,9 +26,7 @@
           "positioning": "Targets mature enterprise clients seeking comprehensive agency management.",
           "opportunity": "Win seed and Series A founders through agile 4-week design sprints and direct principal engagement.",
           "evidence": "verified",
-          "source_urls": [
-            "https://designcraft.example"
-          ],
+          "source_urls": ["https://designcraft.example"],
           "confidence": 0.88,
           "competitor_type": "direct"
         },
@@ -37,10 +35,7 @@
           "website": "https://sprintstudio.example",
           "category": "Fast-Turnaround UI Studio",
           "description": "Product design studio offering weekly subscription tiers for UI component creation and visual asset updates.",
-          "strengths": [
-            "Transparent subscription pricing",
-            "Predictable weekly delivery cycles"
-          ],
+          "strengths": ["Transparent subscription pricing", "Predictable weekly delivery cycles"],
           "gaps": [
             "Limited foundational brand strategy and market positioning depth",
             "Less customization for bespoke investor pitches"
@@ -48,9 +43,7 @@
           "positioning": "Targets cost-conscious startups needing recurring UI production tasks.",
           "opportunity": "Emphasize high-leverage brand positioning that impacts investor perception and customer conversion.",
           "evidence": "verified",
-          "source_urls": [
-            "https://sprintstudio.example"
-          ],
+          "source_urls": ["https://sprintstudio.example"],
           "confidence": 0.85,
           "competitor_type": "direct"
         },
@@ -92,9 +85,7 @@
         "Package standardized 'Seed-to-Series A Brand Acceleration' sprint packages",
         "Publish teardowns of early-stage SaaS positioning to drive inbound discovery"
       ],
-      "evidence": [
-        "https://northstarstudio.example"
-      ]
+      "evidence": ["https://northstarstudio.example"]
     },
     "target_search_queries": [
       {
@@ -252,10 +243,7 @@
             "Engineering-heavy team lacking dedicated brand design expertise",
             "Fast-approaching launch deadline"
           ],
-          "services": [
-            "Foundational Brand Strategy",
-            "Product UI/UX & Web Experiences"
-          ],
+          "services": ["Foundational Brand Strategy", "Product UI/UX & Web Experiences"],
           "opportunity": "Position with high-velocity 3-week design sprints requiring minimal executive overhead.",
           "evidence": "inferred"
         },
@@ -270,19 +258,12 @@
             "Existing brand looks outdated and no longer reflects product maturity",
             "Previous agency delivered static PDFs without developer-ready components"
           ],
-          "services": [
-            "Visual Identity Systems",
-            "Product UI/UX & Web Experiences"
-          ],
+          "services": ["Visual Identity Systems", "Product UI/UX & Web Experiences"],
           "opportunity": "Deliver component-driven Figma design tokens ready for direct React front-end deployment.",
           "evidence": "inferred"
         }
       ],
-      "geographic_focus": [
-        "North America",
-        "United Kingdom & Europe",
-        "Global Remote"
-      ],
+      "geographic_focus": ["North America", "United Kingdom & Europe", "Global Remote"],
       "needs": [
         "High-velocity project execution",
         "Direct communication with senior design practitioners",
