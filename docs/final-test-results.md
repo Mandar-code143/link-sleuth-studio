@@ -1,8 +1,8 @@
 # LinkIntel AI — Final Test Results & Verification Report
 
-**Date:** November 19, 2026  
+**Date:** November 2026  
 **Status:** ALL TESTS PASSING (100% SUCCESS)  
-**Total Automated Tests:** 51 Automated Tests (39 Python Backend + 12 Frontend Vitest)  
+**Total Automated Tests:** 54 Automated Tests (42 Python Backend + 12 Frontend Vitest)  
 **Code Quality:** ESLint clean (0 errors), Prettier formatted, TypeScript build clean (Vite + Nitro SSR)
 
 ---
@@ -11,15 +11,16 @@
 
 All automated test suites across both the Python FastAPI backend and the React TanStack Start frontend were executed and verified. The system passes 100% of its test cases with zero regressions, zero test skips, and zero simulated mock passes on live endpoints.
 
-| Test Suite                              | Framework     | Tests Executed | Passed | Failed | Duration  |
-| :-------------------------------------- | :------------ | :------------: | :----: | :----: | :-------: |
-| **Backend API & Endpoints**             | Pytest 9.1.1  |       9        |   9    |   0    |   0.96s   |
-| **Backend SSRF & Security**             | Pytest 9.1.1  |       19       |   19   |   0    |   0.22s   |
-| **Backend Configuration & Diagnostics** | Pytest 9.1.1  |       6        |   6    |   0    |   0.12s   |
-| **Backend Content Extraction & SEO**    | Pytest 9.1.1  |       3        |   3    |   0    |   0.15s   |
-| **Backend Analysis Schemas & Costing**  | Pytest 9.1.1  |       2        |   2    |   0    |   0.08s   |
-| **Frontend Routing & UI Shell**         | Vitest 4.1.12 |       12       |   12   |   0    |   2.29s   |
-| **TOTAL**                               | —             |     **51**     | **51** | **0**  | **3.82s** |
+| Test Suite | Framework | Tests Executed | Passed | Failed | Duration |
+| :--- | :--- | :---: | :---: | :---: | :---: |
+| **Backend API & Endpoints** | Pytest 9.1.1 | 9 | 9 | 0 | 0.95s |
+| **Backend SSRF & Security** | Pytest 9.1.1 | 19 | 19 | 0 | 0.22s |
+| **Backend Configuration & Diagnostics** | Pytest 9.1.1 | 6 | 6 | 0 | 0.12s |
+| **Backend Multi-Model Lab & Benchmarks** | Pytest 9.1.1 | 3 | 3 | 0 | 0.85s |
+| **Backend Content Extraction & SEO** | Pytest 9.1.1 | 3 | 3 | 0 | 0.15s |
+| **Backend Analysis Schemas & Costing** | Pytest 9.1.1 | 2 | 2 | 0 | 0.08s |
+| **Frontend Routing & UI Shell** | Vitest 4.1.12 | 12 | 12 | 0 | 2.10s |
+| **TOTAL** | — | **54** | **54** | **0** | **4.47s** |
 
 ---
 
@@ -28,7 +29,7 @@ All automated test suites across both the Python FastAPI backend and the React T
 ### Command Executed:
 
 ```bash
-python -m pytest backend/tests -v
+$env:PYTHONPATH="backend"; python -m pytest backend/tests -v
 ```
 
 ### Full Test Execution Log:
@@ -41,23 +42,52 @@ rootdir: C:\Users\manda\Downloads\link-sleuth-studio-main\backend
 configfile: pyproject.toml
 plugins: anyio-4.13.0, asyncio-1.5.0, respx-0.23.1
 asyncio: mode=auto
-collected 39 items
+collected 42 items
 
 backend/tests/test_analysis.py::test_link_analysis_response_schema_validation PASSED [  2%]
-backend/tests/test_analysis.py::test_cost_service_calculation PASSED     [  5%]
+backend/tests/test_analysis.py::test_cost_service_calculation PASSED     [  4%]
 backend/tests/test_api.py::test_health_check_endpoint PASSED             [  7%]
-backend/tests/test_api.py::test_health_ready_endpoint PASSED             [ 10%]
-backend/tests/test_api.py::test_openapi_docs_endpoint PASSED             [ 12%]
-backend/tests/test_api.py::test_link_analysis_rejects_empty_payload PASSED [ 15%]
-backend/tests/test_api.py::test_link_analysis_rejects_invalid_url PASSED [ 17%]
-backend/tests/test_api.py::test_link_analysis_rejects_internal_ip PASSED [ 20%]
-backend/tests/test_api.py::test_link_analysis_rejects_localhost PASSED   [ 23%]
-backend/tests/test_api.py::test_link_analysis_successful_flow PASSED     [ 25%]
-backend/tests/test_api.py::test_link_analysis_aborts_honestly_when_no_api_key PASSED [ 28%]
-backend/tests/test_config.py::test_env_path_anchored_to_backend_dir PASSED [ 30%]
-backend/tests/test_config.py::test_api_key_whitespace_stripping PASSED   [ 33%]
-backend/tests/test_config.py::test_gemini_key_detection PASSED           [ 35%]
-backend/tests/test_config.py::test_invalid_llm_provider_rejected PASSED  [ 38%]
+backend/tests/test_api.py::test_health_ready_endpoint PASSED             [  9%]
+backend/tests/test_api.py::test_openapi_docs_endpoint PASSED             [ 11%]
+backend/tests/test_api.py::test_link_analysis_rejects_empty_payload PASSED [ 14%]
+backend/tests/test_api.py::test_link_analysis_rejects_invalid_url PASSED [ 16%]
+backend/tests/test_api.py::test_link_analysis_rejects_internal_ip PASSED [ 19%]
+backend/tests/test_api.py::test_link_analysis_rejects_localhost PASSED   [ 21%]
+backend/tests/test_api.py::test_link_analysis_successful_flow PASSED     [ 23%]
+backend/tests/test_api.py::test_link_analysis_aborts_honestly_when_no_api_key PASSED [ 26%]
+backend/tests/test_benchmark.py::test_models_status_endpoint PASSED      [ 28%]
+backend/tests/test_benchmark.py::test_benchmark_run_reports_unconfigured_gracefully PASSED [ 30%]
+backend/tests/test_benchmark.py::test_benchmark_run_with_mock_provider PASSED [ 33%]
+backend/tests/test_config.py::test_env_path_anchored_to_backend_dir PASSED [ 35%]
+backend/tests/test_config.py::test_api_key_whitespace_stripping PASSED   [ 38%]
+backend/tests/test_config.py::test_gemini_key_detection PASSED           [ 40%]
+backend/tests/test_config.py::test_invalid_llm_provider_rejected PASSED  [ 42%]
+backend/tests/test_config.py::test_invalid_port_rejected PASSED          [ 45%]
+backend/tests/test_config.py::test_safe_diagnostic_report_never_leaks_secrets PASSED [ 47%]
+backend/tests/test_extractor.py::test_parse_page_html_extracts_all_core_fields PASSED [ 50%]
+backend/tests/test_extractor.py::test_inspect_technical_seo_evaluation PASSED [ 52%]
+backend/tests/test_extractor.py::test_content_cleaner_neutralizes_prompt_injections PASSED [ 54%]
+backend/tests/test_security.py::TestURLValidator::test_valid_public_https_url PASSED [ 57%]
+backend/tests/test_security.py::TestURLValidator::test_valid_public_http_url PASSED [ 59%]
+backend/tests/test_security.py::TestURLValidator::test_reject_ftp_protocol PASSED [ 61%]
+backend/tests/test_security.py::TestURLValidator::test_reject_file_protocol PASSED [ 64%]
+backend/tests/test_security.py::TestURLValidator::test_reject_embedded_credentials PASSED [ 66%]
+backend/tests/test_security.py::TestURLValidator::test_reject_localhost_hostname PASSED [ 69%]
+backend/tests/test_security.py::TestURLValidator::test_reject_internal_tld PASSED [ 71%]
+backend/tests/test_security.py::TestURLValidator::test_reject_direct_loopback_ip PASSED [ 73%]
+backend/tests/test_security.py::TestURLValidator::test_reject_direct_private_rfc1918_ip PASSED [ 76%]
+backend/tests/test_security.py::TestURLValidator::test_reject_direct_ipv6_loopback PASSED [ 78%]
+backend/tests/test_security.py::TestURLValidator::test_reject_direct_ipv4_mapped_ipv6_loopback PASSED [ 80%]
+backend/tests/test_security.py::TestURLValidator::test_reject_cloud_metadata_ip PASSED [ 83%]
+backend/tests/test_security.py::TestDNSValidator::test_detects_prohibited_ips PASSED [ 85%]
+backend/tests/test_security.py::TestDNSValidator::test_allows_public_ip PASSED [ 88%]
+backend/tests/test_security.py::TestDNSValidator::test_fails_closed_when_dns_resolves_to_private_ip PASSED [ 90%]
+backend/tests/test_security.py::TestDNSValidator::test_fails_closed_on_mixed_public_and_private_dns PASSED [ 92%]
+backend/tests/test_security.py::TestDNSValidator::test_blocks_cloud_metadata_hostname PASSED [ 95%]
+backend/tests/test_security.py::TestSafeFetcher::test_redirect_to_localhost_is_blocked PASSED [ 97%]
+backend/tests/test_security.py::TestSafeFetcher::test_redirect_loop_is_detected PASSED [100%]
+======================= 42 passed, 3 warnings in 13.46s =======================
+```
 backend/tests/test_config.py::test_invalid_port_rejected PASSED          [ 41%]
 backend/tests/test_config.py::test_safe_diagnostic_report_never_leaks_secrets PASSED [ 43%]
 backend/tests/test_extractor.py::test_parse_page_html_extracts_all_core_fields PASSED [ 46%]

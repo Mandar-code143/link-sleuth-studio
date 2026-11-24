@@ -54,18 +54,23 @@ import {
   DEFAULT_API_BASE_URL,
   deleteReport,
   DEMO_REPORT,
+  fetchProviderStatus,
   getReport,
   readHistory,
   readPreferences,
+  runModelBenchmark,
   savePreferences,
   saveReport,
   validateWebsiteUrl,
   type ApiHealthStatus,
   type AppPreferences,
   type AudienceProfile,
+  type BenchmarkRunResponse,
   type Competitor,
   type HistoryEntry,
   type LinkAnalysis,
+  type ModelBenchmarkResult,
+  type ProviderStatusItem,
   type SearchQuery,
   type ServiceInsight,
 } from "@/lib/linkintel";
@@ -2003,12 +2008,38 @@ const modelProviders = [
 ];
 
 export function ModelLabPage() {
+  const preferences = readPreferences();
   const [expanded, setExpanded] = useState<string[]>(["Google Gemini"]);
   const [activeTab, setActiveTab] = useState("comparison");
+  const [providerStatuses, setProviderStatuses] = useState<ProviderStatusItem[]>([]);
+
+  useEffect(() => {
+    fetchProviderStatus(preferences.apiBaseUrl)
+      .then((data) => {
+        setProviderStatuses(data.providers);
+      })
+      .catch(() => {
+        // Handled silently when backend is starting or offline
+      });
+  }, [preferences.apiBaseUrl]);
+
   const toggle = (name: string) =>
     setExpanded((current) =>
       current.includes(name) ? current.filter((item) => item !== name) : [...current, name],
     );
+
+  const getProviderConfigured = (name: string) => {
+    const key = name.toLowerCase().includes("gemini")
+      ? "gemini"
+      : name.toLowerCase().includes("openai")
+        ? "openai"
+        : name.toLowerCase().includes("claude") || name.toLowerCase().includes("anthropic")
+          ? "anthropic"
+          : "";
+    const found = providerStatuses.find((p) => p.provider === key);
+    return found ? found.configured : null;
+  };
+
   const checked = new Intl.DateTimeFormat("en", { dateStyle: "long" }).format(new Date());
   return (
     <AppShell title="Model research">
@@ -2071,82 +2102,112 @@ export function ModelLabPage() {
             <StatusPill tone="neutral">Not benchmarked</StatusPill>
           </section>
           <section className="model-list">
-            {modelProviders.map((model) => (
-              <article key={model.name} className="model-card">
-                <button
-                  className="model-card-head"
-                  onClick={() => toggle(model.name)}
-                  aria-expanded={expanded.includes(model.name)}
-                >
-                  <span className={`provider-emblem ${model.color}`}>
-                    {model.name === "OpenAI" ? (
-                      <Activity size={17} />
-                    ) : model.name === "Google Gemini" ? (
-                      <Sparkles size={17} />
-                    ) : (
-                      <BrainCircuit size={17} />
+            {modelProviders.map((model) => {
+              const isConfigured = getProviderConfigured(model.name);
+              return (
+                <article key={model.name} className="model-card">
+                  <button
+                    className="model-card-head"
+                    onClick={() => toggle(model.name)}
+                    aria-expanded={expanded.includes(model.name)}
+                  >
+                    <span className={`provider-emblem ${model.color}`}>
+                      {model.name === "OpenAI" ? (
+                        <Activity size={17} />
+                      ) : model.name === "Google Gemini" ? (
+                        <Sparkles size={17} />
+                      ) : (
+                        <BrainCircuit size={17} />
+                      )}
+                    </span>
+                    <span className="provider-name">
+                      <b>{model.name}</b>
+                      <small>{model.model}</small>
+                    </span>
+                    {isConfigured !== null && (
+                      <span className="model-json-badge" style={{ marginRight: "0.5rem" }}>
+                        {isConfigured ? (
+                          <span
+                            style={{
+                              color: "#059669",
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: "0.25rem",
+                            }}
+                          >
+                            <Check size={12} /> Active
+                          </span>
+                        ) : (
+                          <span
+                            style={{
+                              color: "#9ca3af",
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: "0.25rem",
+                            }}
+                          >
+                            Unconfigured
+                          </span>
+                        )}
+                      </span>
                     )}
-                  </span>
-                  <span className="provider-name">
-                    <b>{model.name}</b>
-                    <small>{model.model}</small>
-                  </span>
-                  <span className="model-price-summary">
-                    {model.input}
-                    <small>Input rate</small>
-                  </span>
-                  <span className="model-json-badge">
-                    <Code2 size={13} />
-                    {model.structured}
-                  </span>
-                  <ChevronDown
-                    className={
-                      expanded.includes(model.name) ? "model-chevron expanded" : "model-chevron"
-                    }
-                    size={16}
-                  />
-                </button>
-                {expanded.includes(model.name) && (
-                  <div className="model-details">
-                    <p>{model.description}</p>
-                    <div className="model-facts">
-                      <div>
-                        <span>INPUT / 1M TOKENS</span>
-                        <b>{model.input}</b>
+                    <span className="model-price-summary">
+                      {model.input}
+                      <small>Input rate</small>
+                    </span>
+                    <span className="model-json-badge">
+                      <Code2 size={13} />
+                      {model.structured}
+                    </span>
+                    <ChevronDown
+                      className={
+                        expanded.includes(model.name) ? "model-chevron expanded" : "model-chevron"
+                      }
+                      size={16}
+                    />
+                  </button>
+                  {expanded.includes(model.name) && (
+                    <div className="model-details">
+                      <p>{model.description}</p>
+                      <div className="model-facts">
+                        <div>
+                          <span>INPUT / 1M TOKENS</span>
+                          <b>{model.input}</b>
+                        </div>
+                        <div>
+                          <span>OUTPUT / 1M TOKENS</span>
+                          <b>{model.output}</b>
+                        </div>
+                        <div>
+                          <span>CONTEXT WINDOW</span>
+                          <b>{model.context}</b>
+                        </div>
+                        <div>
+                          <span>ACTUAL SPEED</span>
+                          <b>{model.speed}</b>
+                        </div>
+                        <div>
+                          <span>STRUCTURED OUTPUT</span>
+                          <b>{model.structured}</b>
+                        </div>
+                        <div>
+                          <span>APPLICATION FIT</span>
+                          <b>{model.suitability}</b>
+                        </div>
                       </div>
-                      <div>
-                        <span>OUTPUT / 1M TOKENS</span>
-                        <b>{model.output}</b>
-                      </div>
-                      <div>
-                        <span>CONTEXT WINDOW</span>
-                        <b>{model.context}</b>
-                      </div>
-                      <div>
-                        <span>ACTUAL SPEED</span>
-                        <b>{model.speed}</b>
-                      </div>
-                      <div>
-                        <span>STRUCTURED OUTPUT</span>
-                        <b>{model.structured}</b>
-                      </div>
-                      <div>
-                        <span>APPLICATION FIT</span>
-                        <b>{model.suitability}</b>
+                      <div className="model-source-links">
+                        <a href={model.pricing} target="_blank" rel="noreferrer">
+                          Official pricing <ExternalLink size={12} />
+                        </a>
+                        <a href={model.structuredUrl} target="_blank" rel="noreferrer">
+                          Structured output docs <ExternalLink size={12} />
+                        </a>
                       </div>
                     </div>
-                    <div className="model-source-links">
-                      <a href={model.pricing} target="_blank" rel="noreferrer">
-                        Official pricing <ExternalLink size={12} />
-                      </a>
-                      <a href={model.structuredUrl} target="_blank" rel="noreferrer">
-                        Structured output docs <ExternalLink size={12} />
-                      </a>
-                    </div>
-                  </div>
-                )}
-              </article>
-            ))}
+                  )}
+                </article>
+              );
+            })}
           </section>
           <p className="model-footnote">
             † Context windows and model availability must be checked in the provider’s current
@@ -2163,6 +2224,30 @@ export function ModelLabPage() {
 }
 
 function BenchmarkPlan() {
+  const preferences = readPreferences();
+  const [targetUrl, setTargetUrl] = useState("https://acmecloud.example");
+  const [mockMode, setMockMode] = useState(false);
+  const [isRunning, setIsRunning] = useState(false);
+  const [benchmarkResult, setBenchmarkResult] = useState<BenchmarkRunResponse | null>(null);
+  const [runError, setRunError] = useState<string | null>(null);
+
+  const handleRun = async () => {
+    setIsRunning(true);
+    setRunError(null);
+    try {
+      const res = await runModelBenchmark(preferences.apiBaseUrl, {
+        url: targetUrl.trim(),
+        mock_mode: mockMode,
+        providers: ["gemini", "openai", "anthropic"],
+      });
+      setBenchmarkResult(res);
+    } catch (err) {
+      setRunError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setIsRunning(false);
+    }
+  };
+
   const cases = [
     "SaaS / software",
     "Professional services",
@@ -2170,22 +2255,255 @@ function BenchmarkPlan() {
     "Retail / ecommerce",
     "Content-light website",
   ];
+
   return (
     <>
-      <div className="benchmark-empty">
-        <span className="benchmark-icon">
-          <BarChart3 size={21} />
-        </span>
-        <div>
-          <StatusPill tone="neutral">No measurements yet</StatusPill>
-          <h2>Benchmark before you claim a winner.</h2>
-          <p>
-            There are no measured timings, quality scores, or per-request costs in this project yet.
-            Use one fixed evaluation set across all providers.
-          </p>
+      <section className="benchmark-runner-panel">
+        <div className="benchmark-runner-header">
+          <h3>
+            <Activity size={18} />
+            Live Multi-Model Benchmark Runner
+          </h3>
+          <StatusPill tone={isRunning ? "warning" : benchmarkResult ? "positive" : "neutral"}>
+            {isRunning
+              ? "Benchmarking..."
+              : benchmarkResult
+                ? "Benchmark Complete"
+                : "Ready to Test"}
+          </StatusPill>
         </div>
-      </div>
+
+        <div className="benchmark-runner-controls">
+          <div className="benchmark-input-row">
+            <input
+              type="text"
+              value={targetUrl}
+              onChange={(e) => setTargetUrl(e.target.value)}
+              placeholder="Enter website URL to benchmark (e.g. https://acmecloud.example)"
+              className="benchmark-url-input"
+              disabled={isRunning}
+            />
+            <Button onClick={handleRun} disabled={isRunning || !targetUrl.trim()} className="gap-2">
+              {isRunning ? (
+                <>
+                  <LoaderCircle size={15} className="animate-spin" />
+                  Running Models...
+                </>
+              ) : (
+                <>
+                  <Sparkles size={15} />
+                  Run Live Benchmark
+                </>
+              )}
+            </Button>
+          </div>
+
+          <div className="benchmark-presets">
+            <span>Quick datasets:</span>
+            <button
+              type="button"
+              className="benchmark-preset-btn"
+              onClick={() => setTargetUrl("https://acmecloud.example")}
+            >
+              Standard Acme Cloud (Benchmark)
+            </button>
+            <button
+              type="button"
+              className="benchmark-preset-btn"
+              onClick={() => setTargetUrl("https://www.hubspot.com")}
+            >
+              HubSpot (Enterprise SaaS)
+            </button>
+            <button
+              type="button"
+              className="benchmark-preset-btn"
+              onClick={() => setTargetUrl("https://stripe.com")}
+            >
+              Stripe (Fintech Infrastructure)
+            </button>
+          </div>
+
+          <div className="benchmark-provider-options">
+            <label className="benchmark-option-label">
+              <input
+                type="checkbox"
+                checked={mockMode}
+                onChange={(e) => setMockMode(e.target.checked)}
+              />
+              <span>Mock / Simulation mode (Compare all 3 without consuming live API credits)</span>
+            </label>
+          </div>
+        </div>
+
+        {runError && (
+          <div className="mt-4 p-3 rounded-md bg-destructive/10 border border-destructive/20 text-destructive text-sm flex items-center gap-2">
+            <CircleAlert size={16} />
+            <span>{runError}</span>
+          </div>
+        )}
+      </section>
+
+      {benchmarkResult && (
+        <>
+          <div className="benchmark-winner-banner">
+            <div className="benchmark-winner-icon">
+              <Sparkles size={22} />
+            </div>
+            <div className="benchmark-winner-text">
+              <h4>Benchmark Winner: {benchmarkResult.recommended_winner}</h4>
+              <p>{benchmarkResult.recommendation_rationale}</p>
+            </div>
+          </div>
+
+          <div className="benchmark-grid">
+            {benchmarkResult.results.map((res) => {
+              const isWinner = res.model === benchmarkResult.recommended_winner;
+              return (
+                <div
+                  key={res.provider}
+                  className={`benchmark-model-card ${isWinner ? "is-winner" : ""}`}
+                >
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <b className="text-sm font-semibold block capitalize">{res.provider}</b>
+                      <small className="text-xs text-muted-foreground">{res.model}</small>
+                    </div>
+                    <StatusPill
+                      tone={
+                        res.status === "success"
+                          ? "positive"
+                          : res.status === "unconfigured"
+                            ? "neutral"
+                            : "critical"
+                      }
+                    >
+                      {res.status === "success"
+                        ? "Evaluated"
+                        : res.status === "unconfigured"
+                          ? "Unconfigured"
+                          : "Error"}
+                    </StatusPill>
+                  </div>
+
+                  {res.status === "unconfigured" ? (
+                    <div className="py-4 text-xs text-muted-foreground text-center bg-muted/40 rounded p-3">
+                      Provider credentials missing in backend <code>.env</code>. Configure{" "}
+                      <code>{res.provider.toUpperCase()}_API_KEY</code> to enable live benchmarking,
+                      or enable mock mode above.
+                    </div>
+                  ) : res.status === "error" ? (
+                    <div className="py-2 text-xs text-destructive bg-destructive/10 rounded p-2">
+                      {res.error_message || "Benchmark failed"}
+                    </div>
+                  ) : (
+                    <>
+                      <div className="benchmark-stat-row">
+                        <span className="benchmark-stat-label">Response Latency</span>
+                        <span className="benchmark-stat-value">{res.latency_ms} ms</span>
+                      </div>
+                      <div className="benchmark-stat-row">
+                        <span className="benchmark-stat-label">Token Usage</span>
+                        <span className="benchmark-stat-value">
+                          {res.input_tokens.toLocaleString()} in /{" "}
+                          {res.output_tokens.toLocaleString()} out
+                        </span>
+                      </div>
+                      <div className="benchmark-stat-row">
+                        <span className="benchmark-stat-label">Cost per Run</span>
+                        <span className="benchmark-stat-value">
+                          ${res.estimated_cost_usd.toFixed(6)}
+                        </span>
+                      </div>
+                      <div className="benchmark-stat-row">
+                        <span className="benchmark-stat-label">Cost per 1,000 Runs</span>
+                        <span className="benchmark-stat-value">
+                          ${res.cost_per_thousand_analyses_usd.toFixed(4)}
+                        </span>
+                      </div>
+                      <div className="benchmark-stat-row">
+                        <span className="benchmark-stat-label">Schema Validity</span>
+                        <span className="benchmark-stat-value text-emerald-600 dark:text-emerald-400">
+                          {res.schema_valid ? "100% Valid" : "Invalid"}
+                        </span>
+                      </div>
+                      <div className="benchmark-stat-row">
+                        <span className="benchmark-stat-label">Completeness</span>
+                        <span className="benchmark-stat-value">{res.completeness_score}%</span>
+                      </div>
+                      <div className="benchmark-stat-row">
+                        <span className="benchmark-stat-label">Quality Score</span>
+                        <span className="benchmark-stat-value">{res.quality_score}%</span>
+                      </div>
+
+                      <div className="dimension-bar-container">
+                        <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+                          Dimension Completeness
+                        </span>
+                        <div className="dimension-bar-item">
+                          <span>Competitors</span>
+                          <div className="dimension-progress">
+                            <div
+                              className="dimension-fill"
+                              style={{ width: `${res.dimension_scores.competitors}%` }}
+                            />
+                          </div>
+                          <b>{res.dimension_scores.competitors}%</b>
+                        </div>
+                        <div className="dimension-bar-item">
+                          <span>Search Queries</span>
+                          <div className="dimension-progress">
+                            <div
+                              className="dimension-fill"
+                              style={{ width: `${res.dimension_scores.search_queries}%` }}
+                            />
+                          </div>
+                          <b>{res.dimension_scores.search_queries}%</b>
+                        </div>
+                        <div className="dimension-bar-item">
+                          <span>SEO Signals</span>
+                          <div className="dimension-progress">
+                            <div
+                              className="dimension-fill"
+                              style={{ width: `${res.dimension_scores.seo}%` }}
+                            />
+                          </div>
+                          <b>{res.dimension_scores.seo}%</b>
+                        </div>
+                        <div className="dimension-bar-item">
+                          <span>Services</span>
+                          <div className="dimension-progress">
+                            <div
+                              className="dimension-fill"
+                              style={{ width: `${res.dimension_scores.services}%` }}
+                            />
+                          </div>
+                          <b>{res.dimension_scores.services}%</b>
+                        </div>
+                        <div className="dimension-bar-item">
+                          <span>Audience</span>
+                          <div className="dimension-progress">
+                            <div
+                              className="dimension-fill"
+                              style={{ width: `${res.dimension_scores.target_audience}%` }}
+                            />
+                          </div>
+                          <b>{res.dimension_scores.target_audience}%</b>
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </>
+      )}
+
       <div className="benchmark-table-wrap">
+        <h4 className="text-sm font-semibold mb-3 flex items-center gap-2">
+          <BookOpen size={15} />
+          Benchmark Evaluation Rubric & Measurement Standards
+        </h4>
         <table className="data-table benchmark-table">
           <thead>
             <tr>
@@ -2219,7 +2537,9 @@ function BenchmarkPlan() {
                 </td>
                 <td>{how}</td>
                 <td>
-                  <StatusPill tone="neutral">Not measured</StatusPill>
+                  <StatusPill tone={benchmarkResult ? "positive" : "neutral"}>
+                    {benchmarkResult ? "Benchmarked" : "Ready"}
+                  </StatusPill>
                 </td>
               </tr>
             ))}

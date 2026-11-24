@@ -206,4 +206,47 @@ def inspect_technical_seo(extraction: WebsiteExtraction) -> List[SeoSignal]:
             )
         )
 
+    # 8. HTTPS Protocol & Transport Security
+    is_https = extraction.final_url.lower().startswith("https://")
+    if is_https:
+        signals.append(
+            SeoSignal(
+                name="HTTPS security",
+                value="Enabled (HTTPS)",
+                status="present",
+                note="Website is served securely over TLS/HTTPS, satisfying modern security standards and ranking signals.",
+            )
+        )
+    else:
+        signals.append(
+            SeoSignal(
+                name="HTTPS security",
+                value="Insecure (HTTP)",
+                status="potential_issue",
+                note="Website is served over unencrypted HTTP. Search engines penalize insecure sites and browsers display warnings.",
+            )
+        )
+
+    # 9. Robots Directives
+    robots = extraction.meta_robots
+    if robots:
+        has_noindex = "noindex" in robots.lower()
+        signals.append(
+            SeoSignal(
+                name="Robots directives",
+                value=robots,
+                status="potential_issue" if has_noindex else "present",
+                note="Disallows indexing (noindex detected)!" if has_noindex else "Explicit robots crawling directives defined.",
+            )
+        )
+    else:
+        signals.append(
+            SeoSignal(
+                name="Robots directives",
+                value="Default (index, follow)",
+                status="present",
+                note="No blocking meta robots tags detected; search engines will index and follow links by default.",
+            )
+        )
+
     return signals

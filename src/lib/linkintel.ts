@@ -598,3 +598,94 @@ export async function checkApiHealth(apiBaseUrl: string): Promise<boolean> {
   const result = await checkApiHealthDetailed(apiBaseUrl);
   return result.reachable;
 }
+
+export interface ProviderStatusItem {
+  provider: string;
+  name: string;
+  model: string;
+  configured: boolean;
+  input_rate_per_million: number;
+  output_rate_per_million: number;
+  context_window: string;
+  pricing_source: string;
+}
+
+export interface ProviderStatusResponse {
+  providers: ProviderStatusItem[];
+  default_provider: string;
+  recommended_model: string;
+  timestamp: string;
+}
+
+export interface BenchmarkRunRequest {
+  url?: string;
+  providers?: string[];
+  mock_mode?: boolean;
+}
+
+export interface ModelBenchmarkResult {
+  provider: string;
+  model: string;
+  status: "success" | "unconfigured" | "error";
+  latency_ms: number;
+  input_tokens: number;
+  output_tokens: number;
+  total_tokens: number;
+  estimated_cost_usd: number;
+  cost_per_thousand_analyses_usd: number;
+  schema_valid: boolean;
+  completeness_score: number;
+  quality_score: number;
+  extracted_brand?: string | null;
+  error_message?: string | null;
+  dimension_scores: {
+    competitors: number;
+    search_queries: number;
+    seo: number;
+    services: number;
+    target_audience: number;
+  };
+}
+
+export interface BenchmarkRunResponse {
+  benchmark_id: string;
+  timestamp: string;
+  target_url: string;
+  results: ModelBenchmarkResult[];
+  recommended_winner: string;
+  recommendation_rationale: string;
+}
+
+export async function fetchProviderStatus(apiBaseUrl: string): Promise<ProviderStatusResponse> {
+  const normalized = apiBaseUrl.trim().replace(/\/+$/, "");
+  const response = await fetch(`${normalized}/models/status`, {
+    headers: { Accept: "application/json" },
+  });
+  if (!response.ok) {
+    throw new Error(`Failed to fetch model status (HTTP ${response.status})`);
+  }
+  return response.json();
+}
+
+export async function runModelBenchmark(
+  apiBaseUrl: string,
+  request: BenchmarkRunRequest = {},
+): Promise<BenchmarkRunResponse> {
+  const normalized = apiBaseUrl.trim().replace(/\/+$/, "");
+  const response = await fetch(`${normalized}/benchmark/run`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Accept: "application/json" },
+    body: JSON.stringify(request),
+  });
+  if (!response.ok) {
+    const err = await response.json().catch(() => null);
+    const msg =
+      err && typeof err === "object" && "detail" in err
+        ? typeof err.detail === "object" && err.detail?.message
+          ? err.detail.message
+          : String(err.detail)
+        : `Benchmark failed (HTTP ${response.status})`;
+    throw new Error(msg);
+  }
+  return response.json();
+}

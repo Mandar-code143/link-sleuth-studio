@@ -2413,3 +2413,202 @@
 .backend-status-card .status-val {
   font-weight: 600;
 }
+
+/* Live Multi-Model Benchmark Runner */
+.benchmark-runner-panel {
+  padding: 1.5rem;
+  border-radius: 0.875rem;
+  border: 1px solid var(--color-border);
+  background-color: var(--color-card);
+  margin-bottom: 1.5rem;
+}
+
+.benchmark-runner-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.benchmark-runner-header h3 {
+  font-size: 1.05rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+}
+
+.benchmark-runner-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.benchmark-input-row {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.benchmark-url-input {
+  flex: 1;
+  padding: 0.625rem 0.875rem;
+  border-radius: 0.5rem;
+  border: 1px solid var(--color-border);
+  background-color: var(--color-background);
+  color: var(--color-foreground);
+  font-size: 0.875rem;
+}
+
+.benchmark-presets {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+  font-size: 0.75rem;
+  color: var(--color-muted-foreground);
+}
+
+.benchmark-preset-btn {
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.375rem;
+  border: 1px solid var(--color-border);
+  background-color: var(--color-secondary);
+  color: var(--color-foreground);
+  cursor: pointer;
+  font-size: 0.75rem;
+}
+
+.benchmark-preset-btn:hover {
+  background-color: var(--color-muted);
+}
+
+.benchmark-provider-options {
+  display: flex;
+  gap: 1.5rem;
+  align-items: center;
+  font-size: 0.8125rem;
+  flex-wrap: wrap;
+}
+
+.benchmark-option-label {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  cursor: pointer;
+}
+
+.benchmark-winner-banner {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.25rem;
+  border-radius: 0.75rem;
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(59, 130, 246, 0.15) 100%);
+  border: 1px solid #10b981;
+  margin-bottom: 1.5rem;
+}
+
+.benchmark-winner-icon {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 0.5rem;
+  background-color: #10b981;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.benchmark-winner-text h4 {
+  font-size: 1rem;
+  font-weight: 700;
+  margin: 0 0 0.25rem 0;
+  color: var(--color-foreground);
+}
+
+.benchmark-winner-text p {
+  font-size: 0.8125rem;
+  margin: 0;
+  color: var(--color-muted-foreground);
+}
+
+.benchmark-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.benchmark-model-card {
+  padding: 1.25rem;
+  border-radius: 0.75rem;
+  border: 1px solid var(--color-border);
+  background-color: var(--color-card);
+  display: flex;
+  flex-direction: column;
+  gap: 0.875rem;
+}
+
+.benchmark-model-card.is-winner {
+  border-color: #10b981;
+  box-shadow: 0 0 0 1px #10b981;
+}
+
+.benchmark-stat-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.8125rem;
+  padding: 0.25rem 0;
+  border-bottom: 1px dashed var(--color-border);
+}
+
+.benchmark-stat-row:last-child {
+  border-bottom: none;
+}
+
+.benchmark-stat-label {
+  color: var(--color-muted-foreground);
+}
+
+.benchmark-stat-value {
+  font-weight: 600;
+  color: var(--color-foreground);
+}
+
+.dimension-bar-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  margin-top: 0.5rem;
+}
+
+.dimension-bar-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+}
+
+.dimension-bar-item span {
+  width: 90px;
+  color: var(--color-muted-foreground);
+}
+
+.dimension-progress {
+  flex: 1;
+  height: 6px;
+  background-color: var(--color-muted);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.dimension-fill {
+  height: 100%;
+  background-color: #2563eb;
+  border-radius: 3px;
+}
+

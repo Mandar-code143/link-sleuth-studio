@@ -8,12 +8,14 @@ from fastapi.responses import JSONResponse
 from ..config import settings
 from ..schemas.request import LinkAnalysisRequest
 from ..schemas.response import LinkAnalysisResponse
+from ..schemas.benchmark import ProviderStatusResponse, BenchmarkRunRequest, BenchmarkRunResponse
 from ..security.url_validator import validate_and_normalize_url, URLValidationError
 from ..security.safe_fetcher import SafeFetchError
 from ..security.dns_validator import SSRFSecurityError
 from ..services.website_extractor import WebsiteExtractor
 from ..services.analysis_service import AnalysisService, AnalysisServiceError
 from ..services.cost_service import calculate_analysis_cost
+from ..services.benchmark_service import benchmark_service
 from ..utils.cache import analysis_cache
 from ..utils.logging import log_event
 
@@ -63,6 +65,32 @@ async def readiness_check() -> dict:
         "search_provider_configured": settings.is_search_configured,
         "app_env": settings.app_env,
     }
+
+
+@router.get(
+    "/models/status",
+    summary="List supported LLM providers and configuration status",
+    tags=["Model Lab"],
+    response_model=ProviderStatusResponse,
+)
+async def get_models_status():
+    """Returns runtime credentials and pricing specifications for all supported LLM providers."""
+    return benchmark_service.get_providers_status()
+
+
+@router.post(
+    "/benchmark/run",
+    summary="Execute multi-model comparison benchmark",
+    tags=["Model Lab"],
+    response_model=BenchmarkRunResponse,
+)
+async def run_benchmark(request: BenchmarkRunRequest):
+    """
+    Executes a controlled benchmark comparing Gemini, OpenAI, and Anthropic
+    on latency, token consumption, cost economics, and schema validity.
+    """
+    log_event("benchmark_requested", target_url=request.url, providers=request.providers)
+    return await benchmark_service.run_benchmark(request)
 
 
 @router.post(

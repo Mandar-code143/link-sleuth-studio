@@ -60,8 +60,8 @@ Your task is to analyze the extracted business website content provided below an
 CRITICAL INSTRUCTIONS & ACCURACY BOUNDARIES:
 1. Ground your analysis strictly in the provided website content. Do not invent products, services, offices, or geographic presence not mentioned or directly implied.
 2. Five Required Sections:
-   - Section 1: Competitor vs Your Brand Details (competitor_analysis): Provide a realistic market overview, at least 3 competitors (label evidence as "inferred" unless specifically mentioned on the site as a partner/comparison), core advantages, opportunities, and realistic gaps.
-   - Section 2: Top Five Target Search Queries (target_search_queries): Generate EXACTLY 5 high-value search queries. Platforms must be chosen from [Google, Facebook, Instagram, LinkedIn, X]. Do not fabricate search volume or rankings. Include commercial relevance and target audience for each.
+   - Section 1: Competitor vs Your Brand Details (competitor_analysis): Provide a realistic market overview, at least 3 direct or indirect competitors (label evidence as 'verified' if confirmed via search/content or 'inferred' if reasoned hypothesis), core advantages, opportunities, and realistic gaps.
+   - Section 2: Top Five Target Search Queries (target_search_queries): Generate EXACTLY 5 strategic search queries. The 5 queries MUST collectively provide platform coverage across ALL 5 required platforms: Google, LinkedIn, X, Instagram, and Facebook. Across the 5 queries, every one of these 5 platforms must be represented in the 'platforms' field. Specify search intent, commercial relevance, and target audience for each.
    - Section 3: SEO Improvement (seo_improvements): Provide a focused primary keyword, secondary, long-tail, and business keywords. Recommend an optimized title (<60 chars) and meta description (<160 chars) with strategic rationale.
    - Section 4: Top Services (top_services): Identify up to 5 real services or products offered on the site. If the site only clearly offers 2 or 3 services, provide only those (do not invent fake services).
    - Section 5: Target Audience (target_audience): Define the primary audience, secondary segments, industry verticals, business types, geographic focus, and structured customer persona profiles.
@@ -138,11 +138,11 @@ class MockProvider(BaseLLMProvider):
                 evidence=[],
             ),
             target_search_queries=[
-                SearchQuery(query=f"{brand_name.lower()} cloud architecture api", platforms=["Google", "LinkedIn"], intent="Commercial", relevance="Direct match for developer platform evaluation.", audience="Chief Technology Officers"),
-                SearchQuery(query="enterprise multi cloud orchestration", platforms=["Google"], intent="Informational", relevance="High-intent research query capturing architects.", audience="Cloud Architects"),
-                SearchQuery(query=f"{brand_name.lower()} pricing subscription", platforms=["Google", "X"], intent="Transactional", relevance="Commercial purchase evaluation query.", audience="Procurement Directors"),
-                SearchQuery(query="best automated cloud deployment tools", platforms=["Google", "LinkedIn"], intent="Commercial", relevance="Comparison query for platform evaluation.", audience="DevOps Engineers"),
-                SearchQuery(query="how to reduce cloud infrastructure spend", platforms=["Google"], intent="Informational", relevance="Problem-aware top-of-funnel search inquiry.", audience="VP of Engineering"),
+                SearchQuery(query=f"{brand_name.lower()} enterprise cloud api platform", platforms=["Google"], intent="Commercial", relevance="High-intent query capturing enterprise evaluation of developer cloud services.", audience="Chief Technology Officers"),
+                SearchQuery(query=f"leading cloud infrastructure architects {brand_name.lower()}", platforms=["LinkedIn"], intent="Informational", relevance="B2B professional research capturing infrastructure directors.", audience="Cloud Architects"),
+                SearchQuery(query=f"{brand_name.lower()} real-time kubernetes api release", platforms=["X"], intent="Transactional", relevance="Real-time developer platform evaluation and technical capability discussion.", audience="DevOps Engineers"),
+                SearchQuery(query=f"{brand_name.lower()} engineering culture developer experience", platforms=["Instagram"], intent="Navigational", relevance="Employer brand discovery, visual product walkthroughs, and team storytelling.", audience="Engineering Leads & Talent"),
+                SearchQuery(query=f"best cloud migration tools {brand_name.lower()} review", platforms=["Facebook"], intent="Commercial", relevance="SMB founder and peer community group recommendations.", audience="Startup Founders & SMB Owners"),
             ],
             seo_improvements=SeoImprovements(
                 primary_keyword=f"{brand_name.lower()} enterprise cloud",
@@ -250,7 +250,25 @@ class AnalysisService:
         # 1. Technical SEO inspection from actual HTML
         technical_signals = inspect_technical_seo(extraction)
 
-        # 2. Build structured prompt
+        # 2. Pre-flight competitor search
+        candidate_brand = extraction.title.split(" - ")[0].split(" | ")[0].strip() if extraction.title else extraction.domain.split(".")[0].capitalize()
+        discovered_competitors = []
+        try:
+            discovered_competitors = await self.competitor_service.discover_competitors(
+                brand_name=candidate_brand,
+                category=extraction.title or "Business & Technology",
+                services=[],
+                submitted_domain=extraction.domain,
+            )
+        except Exception as e:
+            logger.debug(f"Pre-flight competitor search skipped: {e}")
+
+        competitor_prompt_hint = ""
+        if discovered_competitors:
+            comp_hints = [f"- {c.name} ({c.website}): {c.description}" for c in discovered_competitors]
+            competitor_prompt_hint = "\nVerified Industry Competitors Discovered via Web Search:\n" + "\n".join(comp_hints) + "\n(Compare the analyzed brand against these real competitors. Attach their source URLs and mark evidence as 'verified'.)\n"
+
+        # 3. Build structured prompt
         untrusted_text = format_untrusted_context(extraction.main_content, extraction.final_url)
         headings_summary = "\n".join([f"{h['level'].upper()}: {h['text']}" for h in extraction.headings[:15]])
 
@@ -261,12 +279,12 @@ Language: {extraction.language or 'N/A'}
 
 Page Headings:
 {headings_summary}
-
+{competitor_prompt_hint}
 Extracted Content:
 {untrusted_text}
 """
 
-        # 3. Call LLM provider
+        # 4. Call LLM provider
         llm_result = await self.provider.analyze(
             system_prompt=SYSTEM_PROMPT,
             user_prompt=user_prompt,
@@ -276,7 +294,7 @@ Extracted Content:
         now_iso = datetime.datetime.now(datetime.timezone.utc).isoformat()
         report_id = f"rpt-{uuid.uuid4().hex[:12]}"
 
-        # 4. Handle provider failures explicitly — NO SYNTHETIC FALLBACK!
+        # 5. Handle provider failures explicitly — NO SYNTHETIC FALLBACK!
         if not llm_result.data:
             error_code = llm_result.error_code or "AI_PROVIDER_ERROR"
             clean_error = llm_result.error or "The configured AI provider was unable to generate a structured analysis."
@@ -298,7 +316,7 @@ Extracted Content:
                 details={"provider": llm_result.provider, "model": llm_result.model},
             )
 
-        # 5. Assemble structured intelligence from verified model completion
+        # 6. Assemble structured intelligence from verified model completion
         payload: LLMAnalysisPayload = llm_result.data
 
         # Guarantee factual technical SEO findings from actual DOM extraction
@@ -308,29 +326,47 @@ Extracted Content:
 
         # Enrich / classify competitors using live search and on-page text
         brand_name = payload.brand.name or extraction.domain
-        try:
-            live_competitors = await self.competitor_service.discover_competitors(
-                brand_name=brand_name,
-                category=payload.brand.category or "Software & Technology",
-                services=[s.name for s in payload.top_services],
-                submitted_domain=extraction.domain,
-            )
-            if live_competitors:
-                # Merge verified search competitors with LLM inferred competitors
-                existing_names = {c.name.lower() for c in payload.competitor_analysis.competitors}
-                for comp in live_competitors:
-                    if comp.name.lower() not in existing_names:
-                        payload.competitor_analysis.competitors.append(comp)
-        except Exception as e:
-            logger.debug(f"Competitor enrichment skipped: {e}")
+        existing_names = {c.name.lower() for c in payload.competitor_analysis.competitors}
+        for comp in discovered_competitors:
+            if comp.name.lower() not in existing_names:
+                payload.competitor_analysis.competitors.append(comp)
 
         # Classify each competitor's provenance rigorously
         for comp in payload.competitor_analysis.competitors:
             comp.evidence = self.competitor_service.classify_evidence(comp, extraction.main_content)
 
+        # Ensure exactly 5 search queries with 5-platform coverage
+        req_platforms = ["Google", "LinkedIn", "X", "Instagram", "Facebook"]
+        queries = payload.target_search_queries[:5]
+        for i, q in enumerate(queries):
+            normalized_platforms = []
+            for p in q.platforms:
+                p_clean = p.strip()
+                if p_clean.lower() in ("x", "twitter"):
+                    normalized_platforms.append("X")
+                elif p_clean.lower() == "google":
+                    normalized_platforms.append("Google")
+                elif p_clean.lower() == "linkedin":
+                    normalized_platforms.append("LinkedIn")
+                elif p_clean.lower() == "instagram":
+                    normalized_platforms.append("Instagram")
+                elif p_clean.lower() == "facebook":
+                    normalized_platforms.append("Facebook")
+                else:
+                    normalized_platforms.append(p_clean)
+            q.platforms = list(dict.fromkeys(normalized_platforms)) or [req_platforms[i % len(req_platforms)]]
+
+        # Guarantee all 5 platforms appear across the 5 queries
+        covered_platforms = {p for q in queries for p in q.platforms}
+        missing_platforms = [p for p in req_platforms if p not in covered_platforms]
+        for idx, missing_p in enumerate(missing_platforms):
+            if idx < len(queries):
+                queries[idx].platforms.append(missing_p)
+                queries[idx].platforms = list(dict.fromkeys(queries[idx].platforms))
+
         bundle = AnalysisBundle(
             competitor_analysis=payload.competitor_analysis,
-            target_search_queries=payload.target_search_queries[:5],
+            target_search_queries=queries,
             seo_improvements=payload.seo_improvements,
             top_services=payload.top_services[:5],
             target_audience=payload.target_audience,

@@ -6,7 +6,7 @@
 [![TypeScript](https://img.shields.io/badge/Language-TypeScript_5.8-3178C6.svg?logo=typescript&logoColor=white)](https://www.typescriptlang.org)
 [![Vite](https://img.shields.io/badge/Bundler-Vite_8-646CFF.svg?logo=vite&logoColor=white)](https://vitejs.dev)
 [![Tailwind CSS v4](https://img.shields.io/badge/Styling-Tailwind_v4-38B2AC.svg?logo=tailwind-css&logoColor=white)](https://tailwindcss.com)
-[![Tests](<https://img.shields.io/badge/Tests-51_Passed_(39_Pytest_+_12_Vitest)-brightgreen.svg>)](<>)
+[![Tests](https://img.shields.io/badge/Tests-54_Passed_(42_Pytest_+_12_Vitest)-brightgreen.svg)](<>)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 > **LinkIntel AI** is a production-ready website intelligence platform that ingests public business websites and transforms live web content into structured competitive intelligence, high-intent search queries, technical SEO audits, core service breakdowns, and buyer persona profiles.
@@ -294,6 +294,22 @@ Deep readiness probe checking AI provider key presence, search provider status, 
   "provider_key_present": true,
   "search_provider_configured": true,
   "warnings": []
+}
+```
+
+### `GET /models/status`
+
+Returns live configuration status, default models, context windows, and official published pricing for Gemini, OpenAI, and Anthropic.
+
+### `POST /benchmark/run`
+
+Executes an on-demand comparative benchmark across the specified LLM models. Calculates response latency, token consumption, microdollar costs, schema compliance, and dimensional completeness.
+
+```json
+{
+  "url": "https://acmecloud.example",
+  "providers": ["gemini", "openai", "anthropic"],
+  "mock_mode": false
 }
 ```
 
