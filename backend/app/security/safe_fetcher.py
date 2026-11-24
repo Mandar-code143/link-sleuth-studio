@@ -26,10 +26,15 @@ class PinnedAsyncNetworkBackend(httpcore.AsyncNetworkBackend):
     hostname for HTTP Host headers and TLS Server Name Indication (SNI).
     """
 
-    def __init__(self, target_hostname: str, pinned_ip: str):
+    def __init__(
+        self,
+        target_hostname: str,
+        pinned_ip: str,
+        backend: Optional[httpcore.AsyncNetworkBackend] = None,
+    ):
         self._target_hostname = target_hostname.lower()
         self._pinned_ip = pinned_ip
-        self._backend = httpcore._backends.auto.AutoBackend()
+        self._backend = backend or httpcore._backends.auto.AutoBackend()
 
     async def connect_tcp(
         self,

@@ -158,3 +158,73 @@ class TestSafeFetcher:
         with patch("httpx.AsyncClient.stream", side_effect=mock_loop_stream):
             with pytest.raises(SafeFetchError, match="Redirect loop detected|Exceeded maximum redirect"):
                 await safe_fetch_url("https://example.com/loop")
+
+
+from app.api.routes import SimpleRateLimiter
+from app.security.safe_fetcher import PinnedAsyncNetworkBackend
+from fastapi import HTTPException
+
+
+class TestRateLimiter:
+    @pytest.mark.asyncio
+    async def test_rate_limiter_allows_under_limit(self):
+        limiter = SimpleRateLimiter(max_requests=3, window_seconds=60)
+        req = AsyncMock()
+        req.headers = {}
+        req.client.host = "198.51.100.1"
+
+        # 3 calls should succeed without exception
+        await limiter(req)
+        await limiter(req)
+        await limiter(req)
+
+    @pytest.mark.asyncio
+    async def test_rate_limiter_blocks_excessive_requests(self):
+        limiter = SimpleRateLimiter(max_requests=2, window_seconds=60)
+        req = AsyncMock()
+        req.headers = {}
+        req.client.host = "198.51.100.2"
+
+        await limiter(req)
+        await limiter(req)
+
+        with pytest.raises(HTTPException) as exc_info:
+            await limiter(req)
+        assert exc_info.value.status_code == 429
+        assert "Rate limit exceeded" in exc_info.value.detail["message"]
+
+    @pytest.mark.asyncio
+    async def test_rate_limiter_uses_x_forwarded_for(self):
+        limiter = SimpleRateLimiter(max_requests=1, window_seconds=60)
+        req = AsyncMock()
+        req.headers = {"X-Forwarded-For": "203.0.113.195, 10.0.0.1"}
+        req.client.host = "10.0.0.1"
+
+        await limiter(req)
+
+        with pytest.raises(HTTPException) as exc_info:
+            await limiter(req)
+        assert exc_info.value.status_code == 429
+
+
+class TestPinnedTransport:
+    @pytest.mark.asyncio
+    async def test_pinned_network_backend_connects_to_pinned_ip(self):
+        mock_underlying = AsyncMock()
+        mock_underlying.connect_tcp.return_value = "mock_stream"
+
+        pinned_backend = PinnedAsyncNetworkBackend(
+            target_hostname="example.com",
+            pinned_ip="93.184.216.34",
+            backend=mock_underlying,
+        )
+
+        res = await pinned_backend.connect_tcp(host="example.com", port=443)
+
+        assert res == "mock_stream"
+        # Must have connected to pinned_ip, NOT "example.com"
+        mock_underlying.connect_tcp.assert_called_once()
+        call_kwargs = mock_underlying.connect_tcp.call_args[1]
+        assert call_kwargs["host"] == "93.184.216.34"
+        assert call_kwargs["port"] == 443
+

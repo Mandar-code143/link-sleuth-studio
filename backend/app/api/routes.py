@@ -1,8 +1,11 @@
-"""API routes for LinkIntel AI with health diagnostics and structured error handling."""
+"""API routes for LinkIntel AI with health diagnostics, rate limiting, and structured error handling."""
 
 import time
 import uuid
-from fastapi import APIRouter, HTTPException, status
+import threading
+from collections import defaultdict
+from typing import Dict, List, Optional
+from fastapi import APIRouter, HTTPException, Request, status
 from fastapi.responses import JSONResponse
 
 from ..config import settings
@@ -22,6 +25,49 @@ from ..utils.logging import log_event
 router = APIRouter()
 extractor = WebsiteExtractor()
 analyzer = AnalysisService()
+
+
+def get_client_ip(request: Request) -> str:
+    """Extracts client IP safely with reverse proxy header support."""
+    forwarded = request.headers.get("x-forwarded-for") or request.headers.get("X-Forwarded-For")
+    if forwarded:
+        return forwarded.split(",")[0].strip()
+    return request.client.host if request.client else "127.0.0.1"
+
+
+class SimpleRateLimiter:
+    """Sliding-window in-memory request throttler by client IP."""
+
+    def __init__(self, max_requests: int = 60, window_seconds: float = 60.0):
+        self.max_requests = max_requests
+        self.window_seconds = window_seconds
+        self._requests: Dict[str, List[float]] = defaultdict(list)
+        self._lock = threading.Lock()
+
+    def is_allowed(self, client_ip: str) -> bool:
+        now = time.time()
+        with self._lock:
+            history = self._requests[client_ip]
+            cutoff = now - self.window_seconds
+            self._requests[client_ip] = [t for t in history if t > cutoff]
+            if len(self._requests[client_ip]) >= self.max_requests:
+                return False
+            self._requests[client_ip].append(now)
+            return True
+
+    async def __call__(self, request: Request) -> None:
+        client_ip = get_client_ip(request)
+        if not self.is_allowed(client_ip):
+            raise HTTPException(
+                status_code=429,
+                detail={
+                    "error_code": "RATE_LIMIT_EXCEEDED",
+                    "message": "Rate limit exceeded. Please wait before submitting additional requests.",
+                },
+            )
+
+
+rate_limiter = SimpleRateLimiter(max_requests=60, window_seconds=60.0)
 
 
 @router.get(
@@ -84,12 +130,27 @@ async def get_models_status():
     tags=["Model Lab"],
     response_model=BenchmarkRunResponse,
 )
-async def run_benchmark(request: BenchmarkRunRequest):
+async def run_benchmark(request: BenchmarkRunRequest, http_req: Request):
     """
     Executes a controlled benchmark comparing Gemini, OpenAI, and Anthropic
     on latency, token consumption, cost economics, and schema validity.
     """
-    log_event("benchmark_requested", target_url=request.url, providers=request.providers)
+    client_ip = get_client_ip(http_req)
+    if not rate_limiter.is_allowed(client_ip):
+        return JSONResponse(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            content={
+                "success": False,
+                "detail": "Rate limit exceeded. Maximum 60 requests per minute.",
+                "error": {
+                    "code": "RATE_LIMIT_EXCEEDED",
+                    "message": "Rate limit exceeded. Maximum 60 requests per minute.",
+                },
+                "request_id": f"req-{uuid.uuid4().hex[:8]}",
+            },
+        )
+
+    log_event("benchmark_requested", target_url=request.url, providers=request.providers, mock=request.mock_mode)
     return await benchmark_service.run_benchmark(request)
 
 
@@ -100,13 +161,28 @@ async def run_benchmark(request: BenchmarkRunRequest):
     response_model=LinkAnalysisResponse,
     status_code=status.HTTP_200_OK,
 )
-async def analyze_link(request: LinkAnalysisRequest):
+async def analyze_link(request: LinkAnalysisRequest, http_req: Request):
     """
     Analyzes a submitted business website and returns five structured dimensions of
     business intelligence, competitor comparisons, search queries, SEO, and audience profiles.
     """
     request_id = f"req-{uuid.uuid4().hex[:8]}"
     start_time = time.perf_counter()
+
+    client_ip = get_client_ip(http_req)
+    if not rate_limiter.is_allowed(client_ip):
+        return JSONResponse(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            content={
+                "success": False,
+                "detail": "Rate limit exceeded. Maximum 60 requests per minute.",
+                "error": {
+                    "code": "RATE_LIMIT_EXCEEDED",
+                    "message": "Rate limit exceeded. Maximum 60 requests per minute.",
+                },
+                "request_id": request_id,
+            },
+        )
 
     log_event("request_received", request_id=request_id, target_url=request.url)
 
@@ -119,6 +195,7 @@ async def analyze_link(request: LinkAnalysisRequest):
             status_code=status.HTTP_400_BAD_REQUEST,
             content={
                 "success": False,
+                "detail": str(e),
                 "error": {
                     "code": "INVALID_URL",
                     "message": str(e),
@@ -150,6 +227,7 @@ async def analyze_link(request: LinkAnalysisRequest):
             status_code=status.HTTP_400_BAD_REQUEST,
             content={
                 "success": False,
+                "detail": f"Security policy blocked request: {e}",
                 "error": {
                     "code": "SECURITY_POLICY_VIOLATION",
                     "message": f"Security policy blocked request: {e}",
@@ -163,6 +241,7 @@ async def analyze_link(request: LinkAnalysisRequest):
             status_code=status.HTTP_502_BAD_GATEWAY,
             content={
                 "success": False,
+                "detail": f"Could not safely fetch website content: {e}",
                 "error": {
                     "code": "FETCH_FAILED",
                     "message": f"Could not safely fetch website content: {e}",
@@ -176,6 +255,7 @@ async def analyze_link(request: LinkAnalysisRequest):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             content={
                 "success": False,
+                "detail": "An error occurred while extracting the target website.",
                 "error": {
                     "code": "INTERNAL_EXTRACTION_ERROR",
                     "message": "An error occurred while extracting the target website.",
@@ -189,8 +269,7 @@ async def analyze_link(request: LinkAnalysisRequest):
         analysis_response, llm_result = await analyzer.analyze_website(extraction)
         total_latency = time.perf_counter() - start_time
 
-        # Cost tracking
-        cost_breakdown = calculate_analysis_cost(
+        cost_info = calculate_analysis_cost(
             model_name=llm_result.model,
             input_tokens=llm_result.input_tokens,
             output_tokens=llm_result.output_tokens,
@@ -202,7 +281,7 @@ async def analyze_link(request: LinkAnalysisRequest):
             model=llm_result.model,
             in_tokens=llm_result.input_tokens,
             out_tokens=llm_result.output_tokens,
-            cost_usd=cost_breakdown.total_cost_usd,
+            cost_usd=cost_info.total_cost_usd,
             latency_s=round(total_latency, 2),
         )
 
@@ -217,6 +296,7 @@ async def analyze_link(request: LinkAnalysisRequest):
             status_code=e.status_code,
             content={
                 "success": False,
+                "detail": e.message,
                 "error": {
                     "code": e.error_code,
                     "message": e.message,
@@ -230,6 +310,7 @@ async def analyze_link(request: LinkAnalysisRequest):
             status_code=status.HTTP_502_BAD_GATEWAY,
             content={
                 "success": False,
+                "detail": f"Failed to generate website intelligence: {e}",
                 "error": {
                     "code": "AI_SYNTHESIS_FAILED",
                     "message": f"Failed to generate website intelligence: {e}",

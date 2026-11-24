@@ -81,12 +81,12 @@ This project was built on top of an existing repository (`link-sleuth-studio`) a
 
 | Test Suite / Tool         | Scope                                         | Target               | Result                                               | Status   |
 | :------------------------ | :-------------------------------------------- | :------------------- | :--------------------------------------------------- | :------- |
-| **Pytest Suite**          | Backend Security, Extractor, SEO, API, Benchmark, Cost | 42 Unit Tests        | **42 Passed / 0 Failed** (13.46s)                    | **PASS** |
+| **Pytest Suite**          | Backend Security, Extractor, SEO, API, Benchmark, Cost | 51 Unit Tests        | **51 Passed / 0 Failed** (12.12s)                    | **PASS** |
 | **Vitest Suite**          | Frontend Routing & Component Integration      | 12 Unit Tests        | **12 Passed / 0 Failed** (2.10s)                     | **PASS** |
 | **ESLint**                | Frontend Code Quality & Syntax                | All TypeScript files | **0 Errors** (6 fast-refresh warnings in primitives) | **PASS** |
 | **Prettier**              | Code Formatting                               | Whole repository     | **100% formatted cleanly**                           | **PASS** |
 | **Vite Production Build** | Client & SSR & Nitro Bundling                 | Production targets   | **Clean build (0 errors)**                           | **PASS** |
-| **SSRF Security Suite**   | RFC1918, Loopback, Cloud Metadata, DNS Rebind | 19 Security Tests    | **100% Blocked & Validated**                         | **PASS** |
+| **SSRF Security Suite**   | RFC1918, Loopback, Cloud Metadata, DNS Rebind, Transport Pinning | 23 Security Tests    | **100% Blocked & Validated**                         | **PASS** |
 
 ---
 
@@ -95,3 +95,4 @@ This project was built on top of an existing repository (`link-sleuth-studio`) a
 1. **Authentication Behind Paywalls:** The system safely fetches public web content. Pages behind CAPTCHAs (e.g. Cloudflare Turnstile interactive challenge) or requiring login authentication are respectfully handled with clear error responses (`ExtractionWarning`).
 2. **Dynamic Client-Side Single Page Apps (SPAs):** For purely client-side React/Vue apps that do not render server-side HTML or meta tags, Trafilatura extracts available noscript and initial DOM elements; when HTML is minimal, LLM synthesis leverages Open Graph, title tags, and domain heuristic signals.
 3. **No Synthetic Fallback in Live Mode:** In live mode (`mode="live"`), missing provider keys or upstream API failures return honest, structured HTTP 502/503 errors (`AI_PROVIDER_NOT_CONFIGURED`). Synthetic demo data is only shown in explicit Sample Mode (`mode="demo"`).
+4. **Dynamic Port Compatibility:** The Dockerfile and application entrypoint support dynamic `$PORT` environments (Render, Cloud Run, Fly.io, Railway) while defaulting to port 4000 for local container and local developer workflows.

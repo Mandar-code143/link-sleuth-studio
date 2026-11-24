@@ -55,6 +55,19 @@ export interface AudienceProfile {
   evidence: Evidence;
 }
 
+export interface CostBreakdown {
+  provider: string;
+  model: string;
+  input_tokens: number | null;
+  output_tokens: number | null;
+  total_tokens: number | null;
+  input_cost_usd: number | null;
+  output_cost_usd: number | null;
+  total_estimated_cost_usd: number | null;
+  pricing_source: string;
+  pricing_verification_date: string;
+}
+
 export interface LinkAnalysis {
   success: boolean;
   website: string;
@@ -107,6 +120,7 @@ export interface LinkAnalysis {
     extraction_warnings: string[];
     sample_data: boolean;
     model: string | null;
+    cost_breakdown?: CostBreakdown | null;
   };
 }
 
@@ -332,6 +346,7 @@ export const DEMO_REPORT: LinkAnalysis = {
     ],
     sample_data: true,
     model: null,
+    cost_breakdown: null,
   },
 };
 
@@ -460,16 +475,27 @@ export async function analyzeWebsite(
     const payload: unknown = await response.json().catch(() => null);
     if (!response.ok) {
       let detailMsg = `The analysis service returned ${response.status}.`;
-      if (payload && typeof payload === "object" && "detail" in payload) {
-        const detail = (payload as { detail: unknown }).detail;
-        if (typeof detail === "string") {
-          detailMsg = detail;
-        } else if (detail && typeof detail === "object") {
-          const det = detail as Record<string, unknown>;
-          if (typeof det.message === "string") {
-            detailMsg = det.error_code ? `[${det.error_code}] ${det.message}` : det.message;
-          } else {
-            detailMsg = JSON.stringify(detail);
+      if (payload && typeof payload === "object") {
+        const p = payload as Record<string, unknown>;
+        if (p.error && typeof p.error === "object") {
+          const errObj = p.error as Record<string, unknown>;
+          if (typeof errObj.message === "string") {
+            detailMsg =
+              typeof errObj.code === "string"
+                ? `[${errObj.code}] ${errObj.message}`
+                : errObj.message;
+          }
+        } else if ("detail" in p) {
+          const detail = p.detail;
+          if (typeof detail === "string") {
+            detailMsg = detail;
+          } else if (detail && typeof detail === "object") {
+            const det = detail as Record<string, unknown>;
+            if (typeof det.message === "string") {
+              detailMsg = det.error_code ? `[${det.error_code}] ${det.message}` : det.message;
+            } else {
+              detailMsg = JSON.stringify(detail);
+            }
           }
         }
       }
@@ -619,41 +645,61 @@ export interface ProviderStatusResponse {
 
 export interface BenchmarkRunRequest {
   url?: string;
+  test_content?: string;
   providers?: string[];
   mock_mode?: boolean;
+  benchmark_mode?: "synthetic" | "live";
+}
+
+export interface DimensionScores {
+  competitors: number;
+  search_queries: number;
+  seo: number;
+  services: number;
+  target_audience: number;
 }
 
 export interface ModelBenchmarkResult {
   provider: string;
   model: string;
-  status: "success" | "unconfigured" | "error";
+  name?: string;
+  configured?: boolean;
+  status: "success" | "unconfigured" | "failed" | "error";
+  simulated?: boolean;
+  latency_seconds?: number;
   latency_ms: number;
-  input_tokens: number;
-  output_tokens: number;
-  total_tokens: number;
-  estimated_cost_usd: number;
-  cost_per_thousand_analyses_usd: number;
+  input_tokens: number | null;
+  output_tokens: number | null;
+  total_tokens: number | null;
+  estimated_cost_usd: number | null;
+  cost_per_thousand_analyses_usd: number | null;
   schema_valid: boolean;
   completeness_score: number;
   quality_score: number;
+  brand_extracted?: string | null;
   extracted_brand?: string | null;
+  competitors_count?: number;
+  services_count?: number;
+  queries_count?: number;
+  dimension_scores: DimensionScores;
+  error?: string | null;
   error_message?: string | null;
-  dimension_scores: {
-    competitors: number;
-    search_queries: number;
-    seo: number;
-    services: number;
-    target_audience: number;
-  };
+  error_code?: string | null;
 }
 
 export interface BenchmarkRunResponse {
   benchmark_id: string;
   timestamp: string;
   target_url: string;
+  benchmark_mode?: string;
+  is_simulated?: boolean;
   results: ModelBenchmarkResult[];
-  recommended_winner: string;
-  recommendation_rationale: string;
+  summary?: string;
+  cheapest_model?: string | null;
+  fastest_model?: string | null;
+  highest_quality_model?: string | null;
+  recommended_winner?: string | null;
+  recommendation_rationale?: string | null;
 }
 
 export async function fetchProviderStatus(apiBaseUrl: string): Promise<ProviderStatusResponse> {
@@ -678,13 +724,22 @@ export async function runModelBenchmark(
     body: JSON.stringify(request),
   });
   if (!response.ok) {
-    const err = await response.json().catch(() => null);
-    const msg =
-      err && typeof err === "object" && "detail" in err
-        ? typeof err.detail === "object" && err.detail?.message
-          ? err.detail.message
-          : String(err.detail)
-        : `Benchmark failed (HTTP ${response.status})`;
+    const err = (await response.json().catch(() => null)) as Record<string, unknown> | null;
+    let msg = `Benchmark failed (HTTP ${response.status})`;
+    if (err && typeof err === "object") {
+      if (err.error && typeof err.error === "object") {
+        const errObj = err.error as Record<string, unknown>;
+        if (typeof errObj.message === "string") {
+          msg =
+            typeof errObj.code === "string" ? `[${errObj.code}] ${errObj.message}` : errObj.message;
+        }
+      } else if (err.detail) {
+        msg =
+          typeof err.detail === "object" && (err.detail as Record<string, unknown>)?.message
+            ? String((err.detail as Record<string, unknown>).message)
+            : String(err.detail);
+      }
+    }
     throw new Error(msg);
   }
   return response.json();

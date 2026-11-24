@@ -12,19 +12,21 @@ class ModelPricing:
     output_rate_per_million: float
     effective_date: str
     pricing_source: str
+    verification_date: str = "November 2026"
     currency: str = "USD"
 
 
-# Authoritative, documented provider pricing as of November 2026
+# Authoritative, documented provider pricing verified for November 2026
 PUBLISHED_PRICING: Dict[str, ModelPricing] = {
-    # Google Gemini
+    # Google Gemini (Standard Pay-as-you-go <=128k prompt context)
     "gemini-2.5-flash": ModelPricing(
         provider="gemini",
         model="gemini-2.5-flash",
-        input_rate_per_million=0.075,
-        output_rate_per_million=0.30,
-        effective_date="2025-02-01",
+        input_rate_per_million=0.15,
+        output_rate_per_million=0.60,
+        effective_date="2026-11-20",
         pricing_source="https://ai.google.dev/gemini-api/docs/pricing",
+        verification_date="November 2026",
     ),
     "gemini-1.5-flash": ModelPricing(
         provider="gemini",
@@ -33,6 +35,7 @@ PUBLISHED_PRICING: Dict[str, ModelPricing] = {
         output_rate_per_million=0.30,
         effective_date="2024-05-14",
         pricing_source="https://ai.google.dev/gemini-api/docs/pricing",
+        verification_date="November 2026",
     ),
     "gemini-1.5-pro": ModelPricing(
         provider="gemini",
@@ -41,8 +44,9 @@ PUBLISHED_PRICING: Dict[str, ModelPricing] = {
         output_rate_per_million=5.00,
         effective_date="2024-05-14",
         pricing_source="https://ai.google.dev/gemini-api/docs/pricing",
+        verification_date="November 2026",
     ),
-    # OpenAI
+    # OpenAI (Standard API pricing)
     "gpt-4o-mini": ModelPricing(
         provider="openai",
         model="gpt-4o-mini",
@@ -50,6 +54,7 @@ PUBLISHED_PRICING: Dict[str, ModelPricing] = {
         output_rate_per_million=0.60,
         effective_date="2024-07-18",
         pricing_source="https://developers.openai.com/api/docs/pricing",
+        verification_date="November 2026",
     ),
     "gpt-4o": ModelPricing(
         provider="openai",
@@ -58,6 +63,7 @@ PUBLISHED_PRICING: Dict[str, ModelPricing] = {
         output_rate_per_million=10.00,
         effective_date="2024-08-01",
         pricing_source="https://developers.openai.com/api/docs/pricing",
+        verification_date="November 2026",
     ),
     # Anthropic Claude
     "claude-3-5-haiku-20241022": ModelPricing(
@@ -67,6 +73,7 @@ PUBLISHED_PRICING: Dict[str, ModelPricing] = {
         output_rate_per_million=4.00,
         effective_date="2024-10-22",
         pricing_source="https://platform.claude.com/docs/en/about-claude/pricing",
+        verification_date="November 2026",
     ),
     "claude-3-5-sonnet-20241022": ModelPricing(
         provider="anthropic",
@@ -75,6 +82,7 @@ PUBLISHED_PRICING: Dict[str, ModelPricing] = {
         output_rate_per_million=15.00,
         effective_date="2024-10-22",
         pricing_source="https://platform.claude.com/docs/en/about-claude/pricing",
+        verification_date="November 2026",
     ),
 }
 
@@ -90,6 +98,7 @@ class CostBreakdown:
     total_cost_usd: Optional[float]
     is_measured: bool
     pricing_source: Optional[str]
+    pricing_verification_date: str = "November 2026"
 
 
 def calculate_analysis_cost(
@@ -121,6 +130,7 @@ def calculate_analysis_cost(
             total_cost_usd=None,
             is_measured=False,
             pricing_source=pricing.pricing_source if pricing else None,
+            pricing_verification_date="November 2026",
         )
 
     in_cost = (input_tokens / 1_000_000) * pricing.input_rate_per_million
@@ -137,4 +147,5 @@ def calculate_analysis_cost(
         total_cost_usd=round(total, 6),
         is_measured=True,
         pricing_source=pricing.pricing_source,
+        pricing_verification_date=pricing.verification_date,
     )

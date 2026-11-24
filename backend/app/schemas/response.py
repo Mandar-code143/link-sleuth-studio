@@ -112,6 +112,25 @@ class AnalysisBundle(BaseModel):
     target_audience: TargetAudience
 
 
+class CostBreakdown(BaseModel):
+    provider: str = Field(..., description="LLM provider name.")
+    model: str = Field(..., description="LLM model identifier.")
+    input_tokens: Optional[int] = Field(default=None, description="Count of input tokens processed.")
+    output_tokens: Optional[int] = Field(default=None, description="Count of output tokens generated.")
+    total_tokens: Optional[int] = Field(default=None, description="Total tokens consumed.")
+    input_cost_usd: Optional[float] = Field(default=None, description="Calculated input cost in USD.")
+    output_cost_usd: Optional[float] = Field(default=None, description="Calculated output cost in USD.")
+    total_estimated_cost_usd: Optional[float] = Field(default=None, description="Total estimated cost in USD.")
+    pricing_source: str = Field(
+        default="https://ai.google.dev/gemini-api/docs/pricing",
+        description="Official published pricing documentation URL.",
+    )
+    pricing_verification_date: str = Field(
+        default="November 2026",
+        description="Date when published pricing was verified.",
+    )
+
+
 class ReportMetadata(BaseModel):
     report_id: str = Field(..., description="Unique analysis report identifier.")
     analyzed_at: str = Field(..., description="ISO 8601 timestamp of analysis execution.")
@@ -120,6 +139,7 @@ class ReportMetadata(BaseModel):
     extraction_warnings: List[str] = Field(default_factory=list, description="Warnings encountered during extraction.")
     sample_data: bool = Field(default=False, description="Flag indicating if this is an illustrative sample.")
     model: Optional[str] = Field(default=None, description="Identifier of the LLM model that generated the report.")
+    cost_breakdown: Optional[CostBreakdown] = Field(default=None, description="Microdollar token cost metrics.")
 
 
 class LinkAnalysisResponse(BaseModel):

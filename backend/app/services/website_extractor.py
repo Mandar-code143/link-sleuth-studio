@@ -29,15 +29,19 @@ class PageData:
     meta_description: Optional[str] = None
     h1: List[str] = field(default_factory=list)
     h2: List[str] = field(default_factory=list)
+    h3: List[str] = field(default_factory=list)
     main_text: str = ""
     canonical: Optional[str] = None
     language: Optional[str] = None
+    viewport: Optional[str] = None
     open_graph: Dict[str, str] = field(default_factory=dict)
+    twitter_cards: Dict[str, str] = field(default_factory=dict)
     schema_org: List[dict] = field(default_factory=list)
     meta_robots: Optional[str] = None
     internal_links: List[str] = field(default_factory=list)
     external_links: List[str] = field(default_factory=list)
     images_with_alt: List[Dict[str, str]] = field(default_factory=list)
+    images_missing_alt_count: int = 0
 
 
 @dataclass
@@ -55,6 +59,11 @@ class WebsiteExtraction:
     structured_data: List[dict]
     open_graph: Dict[str, str]
     meta_robots: Optional[str]
+    viewport: Optional[str] = None
+    twitter_cards: Dict[str, str] = field(default_factory=dict)
+    internal_links_count: int = 0
+    images_total: int = 0
+    images_missing_alt: int = 0
     extraction_warnings: List[str] = field(default_factory=list)
 
 
@@ -85,8 +94,12 @@ def parse_page_html(url: str, html: str) -> PageData:
                 page.meta_description = clean_text_block(content)
             elif name == "robots":
                 page.meta_robots = content.strip()
+            elif name == "viewport":
+                page.viewport = content.strip()
             elif prop.startswith("og:"):
                 page.open_graph[prop] = content.strip()
+            elif name.startswith("twitter:") or prop.startswith("twitter:"):
+                page.twitter_cards[name or prop] = content.strip()
 
         # 3. Canonical URL
         link_canonical = soup.find("link", rel=lambda r: r and "canonical" in r.lower())
@@ -109,6 +122,11 @@ def parse_page_html(url: str, html: str) -> PageData:
             if text and text not in page.h2:
                 page.h2.append(text)
 
+        for h3 in soup.find_all("h3"):
+            text = clean_text_block(h3.get_text())
+            if text and text not in page.h3:
+                page.h3.append(text)
+
         # 6. Links
         for a in soup.find_all("a", href=True):
             raw_href = a["href"].strip()
@@ -127,6 +145,8 @@ def parse_page_html(url: str, html: str) -> PageData:
         for img in soup.find_all("img"):
             alt = clean_text_block(img.get("alt") or "")
             src = img.get("src") or ""
+            if not alt:
+                page.images_missing_alt_count += 1
             if alt or src:
                 page.images_with_alt.append({"src": urljoin(url, src), "alt": alt})
 
@@ -231,6 +251,8 @@ class WebsiteExtractor:
             headings.append({"level": "h1", "text": h1})
         for h2 in homepage_data.h2:
             headings.append({"level": "h2", "text": h2})
+        for h3 in homepage_data.h3[:10]:
+            headings.append({"level": "h3", "text": h3})
 
         # 5. Aggregate main content
         combined_texts = [f"=== Homepage ({final_url}) ===\n{homepage_data.main_text}"]
@@ -255,5 +277,10 @@ class WebsiteExtractor:
             structured_data=homepage_data.schema_org,
             open_graph=homepage_data.open_graph,
             meta_robots=homepage_data.meta_robots,
+            viewport=homepage_data.viewport,
+            twitter_cards=homepage_data.twitter_cards,
+            internal_links_count=len(homepage_data.internal_links),
+            images_total=len(homepage_data.images_with_alt),
+            images_missing_alt=homepage_data.images_missing_alt_count,
             extraction_warnings=warnings,
         )

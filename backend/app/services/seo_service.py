@@ -249,4 +249,103 @@ def inspect_technical_seo(extraction: WebsiteExtraction) -> List[SeoSignal]:
             )
         )
 
+    # 10. Mobile Viewport Configuration
+    viewport = getattr(extraction, "viewport", None)
+    if viewport:
+        signals.append(
+            SeoSignal(
+                name="Mobile viewport",
+                value=viewport,
+                status="present",
+                note="Mobile viewport tag is configured for responsive rendering on handheld devices.",
+            )
+        )
+    else:
+        signals.append(
+            SeoSignal(
+                name="Mobile viewport",
+                value=None,
+                status="potential_issue",
+                note="No viewport meta tag was found. Mobile search engines may penalize non-responsive pages.",
+            )
+        )
+
+    # 11. Twitter / X Card Metadata
+    twitter = getattr(extraction, "twitter_cards", {})
+    if twitter and any("card" in k for k in twitter):
+        signals.append(
+            SeoSignal(
+                name="Twitter / X cards",
+                value=twitter.get("twitter:card", "Configured"),
+                status="present",
+                note=f"Twitter card tags present ({len(twitter)} tags) for optimized preview sharing.",
+            )
+        )
+    else:
+        signals.append(
+            SeoSignal(
+                name="Twitter / X cards",
+                value=None,
+                status="missing",
+                note="No Twitter/X card tags detected; social previews will fall back to default metadata.",
+            )
+        )
+
+    # 12. Heading Hierarchy Structure
+    h2_count = sum(1 for h in extraction.headings if h.get("level") == "h2")
+    h3_count = sum(1 for h in extraction.headings if h.get("level") == "h3")
+    if h2_count > 0:
+        signals.append(
+            SeoSignal(
+                name="Heading hierarchy",
+                value=f"H2: {h2_count}, H3: {h3_count}",
+                status="present",
+                note=f"Structured subheading hierarchy found ({h2_count} H2s, {h3_count} H3s) supporting topical flow.",
+            )
+        )
+    else:
+        signals.append(
+            SeoSignal(
+                name="Heading hierarchy",
+                value=None,
+                status="potential_issue",
+                note="No H2 subheadings found. Subheadings improve readability and content structure for search crawlers.",
+            )
+        )
+
+    # 13. Image Accessibility & Alt Text Coverage
+    img_total = getattr(extraction, "images_total", 0)
+    img_missing = getattr(extraction, "images_missing_alt", 0)
+    if img_total > 0:
+        with_alt = img_total - img_missing
+        pct = int((with_alt / img_total) * 100) if img_total else 100
+        signals.append(
+            SeoSignal(
+                name="Image alt text",
+                value=f"{pct}% coverage ({with_alt}/{img_total} images)",
+                status="present" if pct >= 75 else "potential_issue",
+                note=f"{with_alt} of {img_total} images have descriptive alt text for accessibility and image search.",
+            )
+        )
+    else:
+        signals.append(
+            SeoSignal(
+                name="Image alt text",
+                value="No images detected",
+                status="present",
+                note="No inline image tags detected on the primary page content.",
+            )
+        )
+
+    # 14. Internal Navigation Structure
+    links_count = getattr(extraction, "internal_links_count", len(extraction.internal_pages))
+    signals.append(
+        SeoSignal(
+            name="Internal link count",
+            value=f"{links_count} links detected",
+            status="present" if links_count >= 3 else "potential_issue",
+            note=f"Found {links_count} internal navigational links distributing link equity across the domain.",
+        )
+    )
+
     return signals

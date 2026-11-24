@@ -3,7 +3,7 @@
 import datetime
 import logging
 import uuid
-from typing import Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 from pydantic import BaseModel, Field
 
 from ..config import settings
@@ -20,6 +20,7 @@ from ..schemas.response import (
     AnalysisBundle,
     ReportMetadata,
     LinkAnalysisResponse,
+    CostBreakdown as ResponseCostBreakdown,
 )
 from ..providers.base import BaseLLMProvider, LLMResult
 from ..providers.gemini import GeminiProvider
@@ -29,6 +30,7 @@ from .website_extractor import WebsiteExtraction
 from .seo_service import inspect_technical_seo
 from .content_cleaner import format_untrusted_context
 from .competitor_service import CompetitorResearchService
+from .cost_service import calculate_analysis_cost
 
 logger = logging.getLogger("linkintel.analysis")
 
@@ -236,6 +238,59 @@ class AnalysisService:
             api_key=settings.search_api_key,
         )
 
+    def normalize_search_queries(
+        self,
+        queries: List[SearchQuery],
+        brand_name: str,
+        category: str = "business solutions",
+    ) -> List[SearchQuery]:
+        """Ensures exactly 5 queries and collective coverage across Google, LinkedIn, X, Instagram, Facebook."""
+        req_platforms = ["Google", "LinkedIn", "X", "Instagram", "Facebook"]
+        result = list(queries)
+
+        while len(result) < 5:
+            idx = len(result)
+            plat = req_platforms[idx % len(req_platforms)]
+            intent = "Commercial" if idx % 2 == 0 else "Informational"
+            result.append(
+                SearchQuery(
+                    query=f"{brand_name} {category}",
+                    platforms=[plat],
+                    intent=intent,
+                    relevance=f"High-intent search query targeting {plat} users.",
+                    audience=f"{plat} commercial and professional decision makers",
+                )
+            )
+
+        result = result[:5]
+
+        for i, q in enumerate(result):
+            normalized_platforms = []
+            for p in q.platforms:
+                p_clean = p.strip()
+                if p_clean.lower() in ("x", "twitter"):
+                    normalized_platforms.append("X")
+                elif p_clean.lower() == "google":
+                    normalized_platforms.append("Google")
+                elif p_clean.lower() == "linkedin":
+                    normalized_platforms.append("LinkedIn")
+                elif p_clean.lower() == "instagram":
+                    normalized_platforms.append("Instagram")
+                elif p_clean.lower() == "facebook":
+                    normalized_platforms.append("Facebook")
+                else:
+                    normalized_platforms.append(p_clean)
+            q.platforms = list(dict.fromkeys(normalized_platforms)) or [req_platforms[i % len(req_platforms)]]
+
+        covered_platforms = {p for q in result for p in q.platforms}
+        missing_platforms = [p for p in req_platforms if p not in covered_platforms]
+        for i, missing in enumerate(missing_platforms):
+            if i < len(result):
+                if missing not in result[i].platforms:
+                    result[i].platforms.append(missing)
+
+        return result
+
     async def analyze_website(
         self,
         extraction: WebsiteExtraction,
@@ -331,38 +386,21 @@ Extracted Content:
             if comp.name.lower() not in existing_names:
                 payload.competitor_analysis.competitors.append(comp)
 
-        # Classify each competitor's provenance rigorously
+        # Classify each competitor's provenance rigorously with verified external sources
+        verified_sources = {c.name.lower() for c in discovered_competitors} | {c.website.lower() for c in discovered_competitors}
         for comp in payload.competitor_analysis.competitors:
-            comp.evidence = self.competitor_service.classify_evidence(comp, extraction.main_content)
+            comp.evidence = self.competitor_service.classify_evidence(
+                competitor=comp,
+                on_page_text=extraction.main_content,
+                verified_sources=verified_sources,
+            )
 
-        # Ensure exactly 5 search queries with 5-platform coverage
-        req_platforms = ["Google", "LinkedIn", "X", "Instagram", "Facebook"]
-        queries = payload.target_search_queries[:5]
-        for i, q in enumerate(queries):
-            normalized_platforms = []
-            for p in q.platforms:
-                p_clean = p.strip()
-                if p_clean.lower() in ("x", "twitter"):
-                    normalized_platforms.append("X")
-                elif p_clean.lower() == "google":
-                    normalized_platforms.append("Google")
-                elif p_clean.lower() == "linkedin":
-                    normalized_platforms.append("LinkedIn")
-                elif p_clean.lower() == "instagram":
-                    normalized_platforms.append("Instagram")
-                elif p_clean.lower() == "facebook":
-                    normalized_platforms.append("Facebook")
-                else:
-                    normalized_platforms.append(p_clean)
-            q.platforms = list(dict.fromkeys(normalized_platforms)) or [req_platforms[i % len(req_platforms)]]
-
-        # Guarantee all 5 platforms appear across the 5 queries
-        covered_platforms = {p for q in queries for p in q.platforms}
-        missing_platforms = [p for p in req_platforms if p not in covered_platforms]
-        for idx, missing_p in enumerate(missing_platforms):
-            if idx < len(queries):
-                queries[idx].platforms.append(missing_p)
-                queries[idx].platforms = list(dict.fromkeys(queries[idx].platforms))
+        # Ensure exactly 5 search queries with collective 5-platform coverage
+        queries = self.normalize_search_queries(
+            queries=payload.target_search_queries,
+            brand_name=brand_name,
+            category=extraction.title or "business solutions",
+        )
 
         bundle = AnalysisBundle(
             competitor_analysis=payload.competitor_analysis,
@@ -370,6 +408,25 @@ Extracted Content:
             seo_improvements=payload.seo_improvements,
             top_services=payload.top_services[:5],
             target_audience=payload.target_audience,
+        )
+
+        cost_info = calculate_analysis_cost(
+            model_name=llm_result.model,
+            input_tokens=llm_result.input_tokens,
+            output_tokens=llm_result.output_tokens,
+        )
+
+        cost_breakdown_schema = ResponseCostBreakdown(
+            provider=cost_info.provider,
+            model=cost_info.model,
+            input_tokens=cost_info.input_tokens,
+            output_tokens=cost_info.output_tokens,
+            total_tokens=llm_result.total_tokens,
+            input_cost_usd=cost_info.input_cost_usd,
+            output_cost_usd=cost_info.output_cost_usd,
+            total_estimated_cost_usd=cost_info.total_cost_usd,
+            pricing_source=cost_info.pricing_source or "https://ai.google.dev/gemini-api/docs/pricing",
+            pricing_verification_date=cost_info.pricing_verification_date,
         )
 
         metadata = ReportMetadata(
@@ -380,6 +437,7 @@ Extracted Content:
             extraction_warnings=extraction.extraction_warnings,
             sample_data=False,
             model=f"{llm_result.provider} ({llm_result.model})",
+            cost_breakdown=cost_breakdown_schema,
         )
 
         response = LinkAnalysisResponse(

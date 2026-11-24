@@ -145,15 +145,15 @@ def test_link_analysis_response_schema_validation():
 
 
 def test_cost_service_calculation():
-    # Gemini 2.5 Flash: $0.075 / 1M input, $0.30 / 1M output
+    # Gemini 2.5 Flash: $0.15 / 1M input, $0.60 / 1M output (November 2026 verified)
     cost_gemini = calculate_analysis_cost(
         model_name="gemini-2.5-flash",
         input_tokens=10_000,
         output_tokens=2_000,
     )
     assert cost_gemini.is_measured is True
-    # (10000 / 1M * 0.075) = 0.00075, (2000 / 1M * 0.30) = 0.0006 -> total = 0.00135
-    assert cost_gemini.total_cost_usd == pytest.approx(0.00135, rel=1e-3)
+    # (10000 / 1M * 0.15) = 0.0015, (2000 / 1M * 0.60) = 0.0012 -> total = 0.0027
+    assert cost_gemini.total_cost_usd == pytest.approx(0.0027, rel=1e-3)
 
     # OpenAI GPT-4o-mini: $0.15 / 1M input, $0.60 / 1M output
     cost_openai = calculate_analysis_cost(
@@ -169,3 +169,60 @@ def test_cost_service_calculation():
     cost_unmeasured = calculate_analysis_cost("gemini-2.5-flash", None, None)
     assert cost_unmeasured.is_measured is False
     assert cost_unmeasured.total_cost_usd is None
+
+
+def test_search_queries_five_platforms_coverage():
+    from app.services.analysis_service import AnalysisService
+
+    service = AnalysisService()
+    # Test normalization when model returns only 1 query
+    raw_queries = [
+        SearchQuery(
+            query="test query 1",
+            platforms=["Google"],
+            intent="Commercial",
+            relevance="Relevant",
+            audience="Founders",
+        )
+    ]
+    normalized = service.normalize_search_queries(
+        queries=raw_queries,
+        brand_name="Test Brand",
+        category="Tech Solutions",
+    )
+    # Must enforce exactly 5 queries
+    assert len(normalized) == 5
+    # Must collectively cover all 5 required platforms
+    all_platforms = set()
+    for q in normalized:
+        all_platforms.update(p.lower() for p in q.platforms)
+    for expected in ["google", "linkedin", "x", "instagram", "facebook"]:
+        assert any(expected in p for p in all_platforms)
+
+
+def test_report_metadata_cost_breakdown_schema():
+    from app.schemas.response import CostBreakdown
+
+    cb = CostBreakdown(
+        provider="gemini",
+        model="gemini-2.5-flash",
+        input_tokens=1500,
+        output_tokens=850,
+        total_tokens=2350,
+        input_cost_usd=0.000225,
+        output_cost_usd=0.000510,
+        total_estimated_cost_usd=0.000735,
+        pricing_source="https://ai.google.dev/gemini-api/docs/pricing",
+        pricing_verification_date="November 2026",
+    )
+    metadata = ReportMetadata(
+        report_id="rpt-cost-test",
+        analyzed_at="2026-11-24T12:00:00Z",
+        model="gemini-2.5-flash",
+        cost_breakdown=cb,
+    )
+    assert metadata.cost_breakdown is not None
+    assert metadata.cost_breakdown.total_tokens == 2350
+    assert metadata.cost_breakdown.total_estimated_cost_usd == pytest.approx(0.000735)
+    assert metadata.cost_breakdown.pricing_verification_date == "November 2026"
+

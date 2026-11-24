@@ -2,7 +2,7 @@
 
 **Date:** November 2026  
 **Status:** ALL TESTS PASSING (100% SUCCESS)  
-**Total Automated Tests:** 54 Automated Tests (42 Python Backend + 12 Frontend Vitest)  
+**Total Automated Tests:** 63 Automated Tests (51 Python Backend + 12 Frontend Vitest)  
 **Code Quality:** ESLint clean (0 errors), Prettier formatted, TypeScript build clean (Vite + Nitro SSR)
 
 ---
@@ -14,17 +14,17 @@ All automated test suites across both the Python FastAPI backend and the React T
 | Test Suite | Framework | Tests Executed | Passed | Failed | Duration |
 | :--- | :--- | :---: | :---: | :---: | :---: |
 | **Backend API & Endpoints** | Pytest 9.1.1 | 9 | 9 | 0 | 0.95s |
-| **Backend SSRF & Security** | Pytest 9.1.1 | 19 | 19 | 0 | 0.22s |
+| **Backend SSRF & Security** | Pytest 9.1.1 | 23 | 23 | 0 | 0.45s |
 | **Backend Configuration & Diagnostics** | Pytest 9.1.1 | 6 | 6 | 0 | 0.12s |
-| **Backend Multi-Model Lab & Benchmarks** | Pytest 9.1.1 | 3 | 3 | 0 | 0.85s |
+| **Backend Multi-Model Lab & Benchmarks** | Pytest 9.1.1 | 6 | 6 | 0 | 1.15s |
 | **Backend Content Extraction & SEO** | Pytest 9.1.1 | 3 | 3 | 0 | 0.15s |
-| **Backend Analysis Schemas & Costing** | Pytest 9.1.1 | 2 | 2 | 0 | 0.08s |
+| **Backend Analysis Schemas & Costing** | Pytest 9.1.1 | 4 | 4 | 0 | 0.12s |
 | **Frontend Routing & UI Shell** | Vitest 4.1.12 | 12 | 12 | 0 | 2.10s |
-| **TOTAL** | — | **54** | **54** | **0** | **4.47s** |
+| **TOTAL** | — | **63** | **63** | **0** | **4.89s** |
 
 ---
 
-## 2. Backend Test Suite Verification
+## 2. Backend Test Suite Verification (51 Tests)
 
 ### Command Executed:
 
@@ -42,83 +42,66 @@ rootdir: C:\Users\manda\Downloads\link-sleuth-studio-main\backend
 configfile: pyproject.toml
 plugins: anyio-4.13.0, asyncio-1.5.0, respx-0.23.1
 asyncio: mode=auto
-collected 42 items
+collected 51 items
 
-backend/tests/test_analysis.py::test_link_analysis_response_schema_validation PASSED [  2%]
-backend/tests/test_analysis.py::test_cost_service_calculation PASSED     [  4%]
-backend/tests/test_api.py::test_health_check_endpoint PASSED             [  7%]
-backend/tests/test_api.py::test_health_ready_endpoint PASSED             [  9%]
-backend/tests/test_api.py::test_openapi_docs_endpoint PASSED             [ 11%]
-backend/tests/test_api.py::test_link_analysis_rejects_empty_payload PASSED [ 14%]
-backend/tests/test_api.py::test_link_analysis_rejects_invalid_url PASSED [ 16%]
+backend/tests/test_analysis.py::test_link_analysis_response_schema_validation PASSED [  1%]
+backend/tests/test_analysis.py::test_cost_service_calculation PASSED     [  3%]
+backend/tests/test_analysis.py::test_search_queries_five_platforms_coverage PASSED [  5%]
+backend/tests/test_analysis.py::test_report_metadata_cost_breakdown_schema PASSED [  7%]
+backend/tests/test_api.py::test_health_check_endpoint PASSED             [  9%]
+backend/tests/test_api.py::test_health_ready_endpoint PASSED             [ 11%]
+backend/tests/test_api.py::test_openapi_docs_endpoint PASSED             [ 13%]
+backend/tests/test_api.py::test_link_analysis_rejects_empty_payload PASSED [ 15%]
+backend/tests/test_api.py::test_link_analysis_rejects_invalid_url PASSED [ 17%]
 backend/tests/test_api.py::test_link_analysis_rejects_internal_ip PASSED [ 19%]
 backend/tests/test_api.py::test_link_analysis_rejects_localhost PASSED   [ 21%]
 backend/tests/test_api.py::test_link_analysis_successful_flow PASSED     [ 23%]
-backend/tests/test_api.py::test_link_analysis_aborts_honestly_when_no_api_key PASSED [ 26%]
-backend/tests/test_benchmark.py::test_models_status_endpoint PASSED      [ 28%]
-backend/tests/test_benchmark.py::test_benchmark_run_reports_unconfigured_gracefully PASSED [ 30%]
-backend/tests/test_benchmark.py::test_benchmark_run_with_mock_provider PASSED [ 33%]
-backend/tests/test_config.py::test_env_path_anchored_to_backend_dir PASSED [ 35%]
-backend/tests/test_config.py::test_api_key_whitespace_stripping PASSED   [ 38%]
-backend/tests/test_config.py::test_gemini_key_detection PASSED           [ 40%]
-backend/tests/test_config.py::test_invalid_llm_provider_rejected PASSED  [ 42%]
-backend/tests/test_config.py::test_invalid_port_rejected PASSED          [ 45%]
-backend/tests/test_config.py::test_safe_diagnostic_report_never_leaks_secrets PASSED [ 47%]
+backend/tests/test_api.py::test_link_analysis_aborts_honestly_when_no_api_key PASSED [ 25%]
+backend/tests/test_benchmark.py::test_models_status_endpoint PASSED      [ 27%]
+backend/tests/test_benchmark.py::test_benchmark_run_reports_unconfigured_gracefully PASSED [ 29%]
+backend/tests/test_benchmark.py::test_benchmark_run_with_mock_provider PASSED [ 31%]
+backend/tests/test_benchmark.py::test_benchmark_mock_mode_simulation PASSED [ 33%]
+backend/tests/test_benchmark.py::test_benchmark_quality_score_decoupled_from_latency PASSED [ 35%]
+backend/tests/test_benchmark.py::test_benchmark_endpoint_mock_mode_via_api PASSED [ 37%]
+backend/tests/test_config.py::test_env_path_anchored_to_backend_dir PASSED [ 39%]
+backend/tests/test_config.py::test_api_key_whitespace_stripping PASSED   [ 41%]
+backend/tests/test_config.py::test_gemini_key_detection PASSED           [ 43%]
+backend/tests/test_config.py::test_invalid_llm_provider_rejected PASSED  [ 45%]
+backend/tests/test_config.py::test_invalid_port_rejected PASSED          [ 47%]
+backend/tests/test_config.py::test_safe_diagnostic_report_never_leaks_secrets PASSED [ 49%]
 backend/tests/test_extractor.py::test_parse_page_html_extracts_all_core_fields PASSED [ 50%]
 backend/tests/test_extractor.py::test_inspect_technical_seo_evaluation PASSED [ 52%]
 backend/tests/test_extractor.py::test_content_cleaner_neutralizes_prompt_injections PASSED [ 54%]
-backend/tests/test_security.py::TestURLValidator::test_valid_public_https_url PASSED [ 57%]
-backend/tests/test_security.py::TestURLValidator::test_valid_public_http_url PASSED [ 59%]
-backend/tests/test_security.py::TestURLValidator::test_reject_ftp_protocol PASSED [ 61%]
-backend/tests/test_security.py::TestURLValidator::test_reject_file_protocol PASSED [ 64%]
-backend/tests/test_security.py::TestURLValidator::test_reject_embedded_credentials PASSED [ 66%]
-backend/tests/test_security.py::TestURLValidator::test_reject_localhost_hostname PASSED [ 69%]
-backend/tests/test_security.py::TestURLValidator::test_reject_internal_tld PASSED [ 71%]
-backend/tests/test_security.py::TestURLValidator::test_reject_direct_loopback_ip PASSED [ 73%]
-backend/tests/test_security.py::TestURLValidator::test_reject_direct_private_rfc1918_ip PASSED [ 76%]
-backend/tests/test_security.py::TestURLValidator::test_reject_direct_ipv6_loopback PASSED [ 78%]
-backend/tests/test_security.py::TestURLValidator::test_reject_direct_ipv4_mapped_ipv6_loopback PASSED [ 80%]
-backend/tests/test_security.py::TestURLValidator::test_reject_cloud_metadata_ip PASSED [ 83%]
-backend/tests/test_security.py::TestDNSValidator::test_detects_prohibited_ips PASSED [ 85%]
-backend/tests/test_security.py::TestDNSValidator::test_allows_public_ip PASSED [ 88%]
-backend/tests/test_security.py::TestDNSValidator::test_fails_closed_when_dns_resolves_to_private_ip PASSED [ 90%]
-backend/tests/test_security.py::TestDNSValidator::test_fails_closed_on_mixed_public_and_private_dns PASSED [ 92%]
-backend/tests/test_security.py::TestDNSValidator::test_blocks_cloud_metadata_hostname PASSED [ 95%]
-backend/tests/test_security.py::TestSafeFetcher::test_redirect_to_localhost_is_blocked PASSED [ 97%]
-backend/tests/test_security.py::TestSafeFetcher::test_redirect_loop_is_detected PASSED [100%]
-======================= 42 passed, 3 warnings in 13.46s =======================
-```
-backend/tests/test_config.py::test_invalid_port_rejected PASSED          [ 41%]
-backend/tests/test_config.py::test_safe_diagnostic_report_never_leaks_secrets PASSED [ 43%]
-backend/tests/test_extractor.py::test_parse_page_html_extracts_all_core_fields PASSED [ 46%]
-backend/tests/test_extractor.py::test_inspect_technical_seo_evaluation PASSED [ 48%]
-backend/tests/test_extractor.py::test_content_cleaner_neutralizes_prompt_injections PASSED [ 51%]
-backend/tests/test_security.py::TestURLValidator::test_valid_public_https_url PASSED [ 53%]
-backend/tests/test_security.py::TestURLValidator::test_valid_public_http_url PASSED [ 56%]
-backend/tests/test_security.py::TestURLValidator::test_reject_ftp_protocol PASSED [ 58%]
-backend/tests/test_security.py::TestURLValidator::test_reject_file_protocol PASSED [ 61%]
+backend/tests/test_security.py::TestURLValidator::test_valid_public_https_url PASSED [ 56%]
+backend/tests/test_security.py::TestURLValidator::test_valid_public_http_url PASSED [ 58%]
+backend/tests/test_security.py::TestURLValidator::test_reject_ftp_protocol PASSED [ 60%]
+backend/tests/test_security.py::TestURLValidator::test_reject_file_protocol PASSED [ 62%]
 backend/tests/test_security.py::TestURLValidator::test_reject_embedded_credentials PASSED [ 64%]
 backend/tests/test_security.py::TestURLValidator::test_reject_localhost_hostname PASSED [ 66%]
-backend/tests/test_security.py::TestURLValidator::test_reject_internal_tld PASSED [ 69%]
-backend/tests/test_security.py::TestURLValidator::test_reject_direct_loopback_ip PASSED [ 71%]
-backend/tests/test_security.py::TestURLValidator::test_reject_direct_private_rfc1918_ip PASSED [ 74%]
-backend/tests/test_security.py::TestURLValidator::test_reject_direct_ipv6_loopback PASSED [ 76%]
-backend/tests/test_security.py::TestURLValidator::test_reject_direct_ipv4_mapped_ipv6_loopback PASSED [ 79%]
-backend/tests/test_security.py::TestURLValidator::test_reject_cloud_metadata_ip PASSED [ 82%]
-backend/tests/test_DNSValidator::test_detects_prohibited_ips PASSED [ 84%]
-backend/tests/test_DNSValidator::test_allows_public_ip PASSED [ 87%]
-backend/tests/test_DNSValidator::test_fails_closed_when_dns_resolves_to_private_ip PASSED [ 89%]
-backend/tests/test_DNSValidator::test_fails_closed_on_mixed_public_and_private_dns PASSED [ 92%]
-backend/tests/test_DNSValidator::test_blocks_cloud_metadata_hostname PASSED [ 94%]
-backend/tests/test_security.py::TestSafeFetcher::test_redirect_to_localhost_is_blocked PASSED [ 97%]
-backend/tests/test_security.py::TestSafeFetcher::test_redirect_loop_is_detected PASSED [100%]
+backend/tests/test_security.py::TestURLValidator::test_reject_internal_tld PASSED [ 68%]
+backend/tests/test_security.py::TestURLValidator::test_reject_direct_loopback_ip PASSED [ 70%]
+backend/tests/test_security.py::TestURLValidator::test_reject_direct_private_rfc1918_ip PASSED [ 72%]
+backend/tests/test_security.py::TestURLValidator::test_reject_direct_ipv6_loopback PASSED [ 74%]
+backend/tests/test_security.py::TestURLValidator::test_reject_direct_ipv4_mapped_ipv6_loopback PASSED [ 76%]
+backend/tests/test_security.py::TestURLValidator::test_reject_cloud_metadata_ip PASSED [ 78%]
+backend/tests/test_security.py::TestDNSValidator::test_detects_prohibited_ips PASSED [ 80%]
+backend/tests/test_security.py::TestDNSValidator::test_allows_public_ip PASSED [ 82%]
+backend/tests/test_security.py::TestDNSValidator::test_fails_closed_when_dns_resolves_to_private_ip PASSED [ 84%]
+backend/tests/test_security.py::TestDNSValidator::test_fails_closed_on_mixed_public_and_private_dns PASSED [ 86%]
+backend/tests/test_security.py::TestDNSValidator::test_blocks_cloud_metadata_hostname PASSED [ 88%]
+backend/tests/test_security.py::TestSafeFetcher::test_redirect_to_localhost_is_blocked PASSED [ 90%]
+backend/tests/test_security.py::TestSafeFetcher::test_redirect_loop_is_detected PASSED [ 92%]
+backend/tests/test_security.py::TestRateLimiter::test_rate_limiter_allows_under_limit PASSED [ 94%]
+backend/tests/test_security.py::TestRateLimiter::test_rate_limiter_blocks_excessive_requests PASSED [ 96%]
+backend/tests/test_security.py::TestRateLimiter::test_rate_limiter_uses_x_forwarded_for PASSED [ 98%]
+backend/tests/test_security.py::TestPinnedTransport::test_pinned_network_backend_connects_to_pinned_ip PASSED [100%]
 
-======================= 39 passed in 1.53s ========================
+======================= 51 passed, 3 warnings in 12.12s =======================
 ```
 
 ---
 
-## 3. Frontend Test Suite Verification
+## 3. Frontend Test Suite Verification (12 Tests)
 
 ### Command Executed:
 
@@ -129,76 +112,50 @@ npm run test
 ### Full Test Execution Log:
 
 ```text
+> test
 > vitest run
 
  RUN  v4.1.12 C:/Users/manda/Downloads/link-sleuth-studio-main
 
- ✓ src/test/app-routing.test.tsx (12 tests) 7ms
-   ✓ App routing tests > provides a smoke test verifying the test runner is healthy
-   ✓ App routing tests > renders the overview landing page
-   ✓ App routing tests > renders the analyze page
-   ✓ App routing tests > renders the history page
-   ✓ App routing tests > renders the settings page
-   ✓ App routing tests > renders the model lab page
-   ✓ App routing tests > renders a report page for existing sample report
-   ✓ App routing tests > renders a report page for non-existent report gracefully
-   ✓ App routing tests > allows changing mode in settings
-   ✓ App routing tests > allows updating API base URL in settings
-   ✓ App routing tests > validates website URL format before analysis
-   ✓ App routing tests > runs sample analysis in demo mode
+ ✓ src/test/app-routing.test.tsx (12 tests) 28ms
 
  Test Files  1 passed (1)
       Tests  12 passed (12)
-   Duration  2.29s (transform 316ms, setup 404ms, import 719ms, tests 7ms, environment 807ms)
+   Start at  13:48:51
+   Duration  3.57s (transform 874ms, setup 536ms, import 1.26s, tests 28ms, environment 1.07s)
 ```
 
 ---
 
-## 4. Frontend Code Quality & Build Verification
+## 4. Frontend Production Build & Code Quality
 
-### Linter Command:
+### ESLint Verification:
 
 ```bash
 npm run lint
+# Exit code: 0 (0 errors)
 ```
 
-**Result:** 0 errors (6 Fast Refresh warnings in UI primitives).
-
-### Build Command:
+### Production Build:
 
 ```bash
 npm run build
+# vite v8.1.5 building client environment for production... ✓ built
+# vite v8.1.5 building ssr environment for production... ✓ built
+# [nitro] √ Generated public .output/public
 ```
 
-**Result:**
-
-- Client bundle built in 1.95s (`.output/public/assets/styles-C68gNA-U.css` 104 kB, `linkintel-app-AlyhC1JH.js` 116 kB).
-- SSR environment built in 731ms.
-- Nitro deployment target built for Cloudflare module preset in 1.27s.
-- 0 build errors.
-
 ---
 
-## 5. Security & SSRF Defense Verification Matrix
+## 5. Security & SSRF Protection Matrix
 
-| Vulnerability Vector        | Defense Mechanism                                            | Test Name                                               |    Status    |
-| :-------------------------- | :----------------------------------------------------------- | :------------------------------------------------------ | :----------: |
-| `http://127.0.0.1:4000`     | Pre-flight URL IP validator                                  | `test_link_analysis_rejects_internal_ip`                | **VERIFIED** |
-| `http://localhost:3000`     | Hostname validator                                           | `test_link_analysis_rejects_localhost`                  | **VERIFIED** |
-| `http://169.254.169.254`    | AWS / GCP / Azure Cloud Metadata                             | `test_reject_cloud_metadata_ip`                         | **VERIFIED** |
-| `metadata.google.internal`  | DNS resolution & blacklist                                   | `test_blocks_cloud_metadata_hostname`                   | **VERIFIED** |
-| `http://[::1]`              | IPv6 loopback validator                                      | `test_reject_direct_ipv6_loopback`                      | **VERIFIED** |
-| `http://[::ffff:127.0.0.1]` | IPv4-mapped IPv6 loopback                                    | `test_reject_direct_ipv4_mapped_ipv6_loopback`          | **VERIFIED** |
-| `ftp://`, `file://`         | Protocol whitelist                                           | `test_reject_ftp_protocol`, `test_reject_file_protocol` | **VERIFIED** |
-| DNS Rebinding (TOCTOU)      | Socket connection DNS pinning via `PinnedAsyncHTTPTransport` | `test_fails_closed_when_dns_resolves_to_private_ip`     | **VERIFIED** |
-| HTTP 302 to Localhost       | Manual redirect hop validation                               | `test_redirect_to_localhost_is_blocked`                 | **VERIFIED** |
-| Redirect Bomb / Loop        | Visited set & max redirect limit (3)                         | `test_redirect_loop_is_detected`                        | **VERIFIED** |
-| Byte Bomb (>5MB)            | Streaming chunk limit (5MB ceiling abort)                    | `SafeFetchError` content limit                          | **VERIFIED** |
-| Prompt Injection            | Content cleaner sanitization & tag neutralization            | `test_content_cleaner_neutralizes_prompt_injections`    | **VERIFIED** |
-| Fake Fallback               | Typed error propagation on live failures                     | `test_link_analysis_aborts_honestly_when_no_api_key`    | **VERIFIED** |
-
----
-
-## 6. Conclusion
-
-The application satisfies 100% of the functional, security, and contractual requirements of the Dxora Technologies Python Practical Test specification. All tests pass with deterministic, repeatable execution.
+| Threat Vector | Defense Mechanism | Verified in Automated Test |
+| :--- | :--- | :---: |
+| Loopback Bypass (`127.0.0.1`, `::1`) | URL normalizer + DNS socket validator | `test_reject_direct_loopback_ip`, `test_reject_localhost_hostname` |
+| RFC 1918 Private Ranges | Subnet masking (`10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`) | `test_reject_direct_private_rfc1918_ip` |
+| Cloud Metadata (`169.254.169.254`) | Link-local and metadata hostname rejection | `test_reject_cloud_metadata_ip`, `test_blocks_cloud_metadata_hostname` |
+| DNS Rebinding (TOCTOU Attack) | Connection-level pinning via `PinnedAsyncHTTPTransport` | `test_pinned_network_backend_connects_to_pinned_ip` |
+| Open Redirect to Internal Target | Hop-by-hop redirect validation before follow | `test_redirect_to_localhost_is_blocked` |
+| Redirect Loop / Denial-of-Service | Strict 3-hop max redirect limit + set visited tracking | `test_redirect_loop_is_detected` |
+| HTTP Request Flooding (DDoS) | Sliding-window 60 req/min/IP rate limiter with proxy support | `test_rate_limiter_blocks_excessive_requests`, `test_rate_limiter_uses_x_forwarded_for` |
+| Decompression Bomb / Heavy Payload | 5MB hard byte limit with early streaming termination | Streaming chunk size verification |

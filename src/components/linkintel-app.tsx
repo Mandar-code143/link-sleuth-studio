@@ -18,6 +18,7 @@ import {
   Clipboard,
   Clock3,
   Code2,
+  Coins,
   Compass,
   Copy,
   ExternalLink,
@@ -921,6 +922,18 @@ export function ReportPage() {
           <span>
             <BrainCircuit size={14} />
             {report.metadata.model}
+          </span>
+        )}
+        {report.metadata.cost_breakdown && (
+          <span
+            title={`Input: ${report.metadata.cost_breakdown.input_tokens ?? 0} tokens | Output: ${report.metadata.cost_breakdown.output_tokens ?? 0} tokens | Source: ${report.metadata.cost_breakdown.pricing_verification_date}`}
+          >
+            <Coins size={14} />
+            {report.metadata.cost_breakdown.total_estimated_cost_usd !== null &&
+            report.metadata.cost_breakdown.total_estimated_cost_usd !== undefined
+              ? `$${report.metadata.cost_breakdown.total_estimated_cost_usd.toFixed(6)}`
+              : "Cost N/A"}{" "}
+            ({report.metadata.cost_breakdown.total_tokens?.toLocaleString() ?? 0} tokens)
           </span>
         )}
         <StatusPill tone={report.metadata.sample_data ? "sample" : "success"}>
@@ -2227,6 +2240,7 @@ function BenchmarkPlan() {
   const preferences = readPreferences();
   const [targetUrl, setTargetUrl] = useState("https://acmecloud.example");
   const [mockMode, setMockMode] = useState(false);
+  const [benchmarkMode, setBenchmarkMode] = useState<"synthetic" | "live">("synthetic");
   const [isRunning, setIsRunning] = useState(false);
   const [benchmarkResult, setBenchmarkResult] = useState<BenchmarkRunResponse | null>(null);
   const [runError, setRunError] = useState<string | null>(null);
@@ -2238,6 +2252,7 @@ function BenchmarkPlan() {
       const res = await runModelBenchmark(preferences.apiBaseUrl, {
         url: targetUrl.trim(),
         mock_mode: mockMode,
+        benchmark_mode: benchmarkMode,
         providers: ["gemini", "openai", "anthropic"],
       });
       setBenchmarkResult(res);
@@ -2323,7 +2338,7 @@ function BenchmarkPlan() {
             </button>
           </div>
 
-          <div className="benchmark-provider-options">
+          <div className="benchmark-provider-options flex flex-wrap gap-4 items-center">
             <label className="benchmark-option-label">
               <input
                 type="checkbox"
@@ -2331,6 +2346,14 @@ function BenchmarkPlan() {
                 onChange={(e) => setMockMode(e.target.checked)}
               />
               <span>Mock / Simulation mode (Compare all 3 without consuming live API credits)</span>
+            </label>
+            <label className="benchmark-option-label">
+              <input
+                type="checkbox"
+                checked={benchmarkMode === "synthetic"}
+                onChange={(e) => setBenchmarkMode(e.target.checked ? "synthetic" : "live")}
+              />
+              <span>Standard synthetic dataset (deterministic benchmark)</span>
             </label>
           </div>
         </div>
@@ -2350,10 +2373,50 @@ function BenchmarkPlan() {
               <Sparkles size={22} />
             </div>
             <div className="benchmark-winner-text">
-              <h4>Benchmark Winner: {benchmarkResult.recommended_winner}</h4>
+              <div className="flex items-center gap-2">
+                <h4>Benchmark Winner: {benchmarkResult.recommended_winner}</h4>
+                {benchmarkResult.is_simulated && <StatusPill tone="neutral">SIMULATED</StatusPill>}
+              </div>
               <p>{benchmarkResult.recommendation_rationale}</p>
             </div>
           </div>
+
+          {(benchmarkResult.fastest_model ||
+            benchmarkResult.cheapest_model ||
+            benchmarkResult.highest_quality_model) && (
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 my-4">
+              {benchmarkResult.fastest_model && (
+                <div className="p-3 bg-muted/40 rounded-lg border border-border/50 text-xs">
+                  <span className="text-muted-foreground block font-medium mb-1">
+                    ⚡ FASTEST MODEL
+                  </span>
+                  <span className="font-semibold text-foreground text-sm">
+                    {benchmarkResult.fastest_model}
+                  </span>
+                </div>
+              )}
+              {benchmarkResult.cheapest_model && (
+                <div className="p-3 bg-muted/40 rounded-lg border border-border/50 text-xs">
+                  <span className="text-muted-foreground block font-medium mb-1">
+                    💰 MOST ECONOMICAL
+                  </span>
+                  <span className="font-semibold text-foreground text-sm">
+                    {benchmarkResult.cheapest_model}
+                  </span>
+                </div>
+              )}
+              {benchmarkResult.highest_quality_model && (
+                <div className="p-3 bg-muted/40 rounded-lg border border-border/50 text-xs">
+                  <span className="text-muted-foreground block font-medium mb-1">
+                    🏆 HIGHEST QUALITY
+                  </span>
+                  <span className="font-semibold text-foreground text-sm">
+                    {benchmarkResult.highest_quality_model}
+                  </span>
+                </div>
+              )}
+            </div>
+          )}
 
           <div className="benchmark-grid">
             {benchmarkResult.results.map((res) => {
@@ -2365,7 +2428,14 @@ function BenchmarkPlan() {
                 >
                   <div className="flex items-center justify-between">
                     <div>
-                      <b className="text-sm font-semibold block capitalize">{res.provider}</b>
+                      <div className="flex items-center gap-2">
+                        <b className="text-sm font-semibold block capitalize">{res.provider}</b>
+                        {res.simulated && (
+                          <span className="text-[10px] uppercase font-mono px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
+                            Simulated
+                          </span>
+                        )}
+                      </div>
                       <small className="text-xs text-muted-foreground">{res.model}</small>
                     </div>
                     <StatusPill
@@ -2404,20 +2474,25 @@ function BenchmarkPlan() {
                       <div className="benchmark-stat-row">
                         <span className="benchmark-stat-label">Token Usage</span>
                         <span className="benchmark-stat-value">
-                          {res.input_tokens.toLocaleString()} in /{" "}
-                          {res.output_tokens.toLocaleString()} out
+                          {res.input_tokens != null ? res.input_tokens.toLocaleString() : "N/A"} in
+                          / {res.output_tokens != null ? res.output_tokens.toLocaleString() : "N/A"}{" "}
+                          out
                         </span>
                       </div>
                       <div className="benchmark-stat-row">
                         <span className="benchmark-stat-label">Cost per Run</span>
                         <span className="benchmark-stat-value">
-                          ${res.estimated_cost_usd.toFixed(6)}
+                          {res.estimated_cost_usd != null
+                            ? `$${res.estimated_cost_usd.toFixed(6)}`
+                            : "N/A"}
                         </span>
                       </div>
                       <div className="benchmark-stat-row">
                         <span className="benchmark-stat-label">Cost per 1,000 Runs</span>
                         <span className="benchmark-stat-value">
-                          ${res.cost_per_thousand_analyses_usd.toFixed(4)}
+                          {res.cost_per_thousand_analyses_usd != null
+                            ? `$${res.cost_per_thousand_analyses_usd.toFixed(4)}`
+                            : "N/A"}
                         </span>
                       </div>
                       <div className="benchmark-stat-row">
