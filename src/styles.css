@@ -66,6 +66,34 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+
+  /* Google Stitch LinkIntel Studio Precision Palette */
+  --color-primary-container: #4355e8;
+  --color-primary-fixed: #dfe0ff;
+  --color-primary-fixed-dim: #bcc2ff;
+  --color-secondary-container: #5566ef;
+  --color-tertiary: #005a4a;
+  --color-tertiary-container: #007561;
+  --color-tertiary-fixed: #83f7d9;
+  --color-tertiary-fixed-dim: #65dabd;
+  --color-surface: #f9f9ff;
+  --color-surface-bright: #f9f9ff;
+  --color-surface-dim: #d2daf0;
+  --color-surface-container-lowest: #ffffff;
+  --color-surface-container-low: #f1f3ff;
+  --color-surface-container: #e9edff;
+  --color-surface-container-high: #e0e8ff;
+  --color-surface-container-highest: #dbe2f9;
+  --color-on-surface: #141b2c;
+  --color-on-surface-variant: #454655;
+  --color-on-primary-container: #e4e4ff;
+  --color-outline: #757687;
+  --color-outline-variant: #c5c5d8;
+  --color-error-container: #ffdad6;
+
+  --font-manrope: 'Manrope', sans-serif;
+  --font-inter: 'Inter', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
 }
 
 :root {

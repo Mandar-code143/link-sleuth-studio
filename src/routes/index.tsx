@@ -1,6 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { DashboardPage } from "@/components/linkintel-app";
+import { WorkstationShell } from "@/components/layout/WorkstationShell";
+import { OverviewPage } from "@/components/pages/OverviewPage";
 
 export const Route = createFileRoute("/")({
-  component: DashboardPage,
+  component: () => (
+    <WorkstationShell activeRoute="overview" breadcrumb="Overview">
+      <OverviewPage />
+    </WorkstationShell>
+  ),
 });
