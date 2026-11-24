@@ -374,9 +374,44 @@ class BenchmarkService:
                 content = extraction.main_content[:6000]
                 extraction_note = f"Evaluated using real extracted content from {target_domain}."
             except Exception as e:
-                logger.warning(f"Live benchmark extraction failed for '{target_url}': {e}. Falling back to controlled dataset.")
-                extraction_note = f"Live extraction failed ({e}); tested with standard benchmark content."
-                content = STANDARD_BENCHMARK_CONTENT
+                logger.error(f"Live benchmark extraction failed for '{target_url}': {e}. Live benchmarks require real website content and never fall back to synthetic data.")
+                # Return explicit failed result for live benchmark without synthetic fallback
+                failed_results = []
+                for pid in request.providers:
+                    pid_clean = pid.lower().strip()
+                    meta = PROVIDER_METADATA.get(
+                        pid_clean,
+                        {"name": pid_clean.capitalize(), "default_model": f"{pid_clean}-model"},
+                    )
+                    failed_results.append(
+                        ModelBenchmarkResult(
+                            provider=pid_clean,
+                            model=meta["default_model"],
+                            name=meta["name"],
+                            configured=self.is_provider_configured(pid_clean, mock_mode=False),
+                            status="failed",
+                            simulated=False,
+                            latency_seconds=0.0,
+                            latency_ms=0,
+                            error=f"Live website content extraction failed: {e}. Live benchmarks require real website extraction and will never fall back to synthetic datasets.",
+                            error_message=f"Live website content extraction failed: {e}. Live benchmarks require real website extraction and will never fall back to synthetic datasets.",
+                            error_code="LIVE_EXTRACTION_FAILED",
+                        )
+                    )
+                return BenchmarkRunResponse(
+                    benchmark_id=benchmark_id,
+                    timestamp=now_iso,
+                    target_url=target_url,
+                    benchmark_mode="live",
+                    is_simulated=False,
+                    results=failed_results,
+                    summary=f"Live benchmark failed: Unable to extract content from '{target_url}' ({e}). Live benchmarks require real extracted content and never fall back to synthetic datasets.",
+                    cheapest_model=None,
+                    fastest_model=None,
+                    highest_quality_model=None,
+                    recommended_winner=None,
+                    recommendation_rationale=f"Evaluation could not be performed because live website content extraction failed: {e}",
+                )
 
         test_user_prompt = f"""Target Website: {target_url} (Domain: {target_domain})
 Homepage Title: {page_title}
@@ -431,8 +466,8 @@ Extracted Content:
                     )
                 )
 
-        # Determine independent winners among successful runs
-        successful = [r for r in results if r.status == "success"]
+        # Determine independent winners and neutral recommendation among successful runs
+        successful = [r for r in results if r.status == "success" and r.schema_valid]
         cheapest = None
         fastest = None
         highest_quality = None
@@ -448,22 +483,68 @@ Extracted Content:
             fastest = min(successful, key=lambda x: x.latency_seconds)
             highest_quality = max(successful, key=lambda x: x.quality_score)
 
-            # Recommended winner evaluates cost-efficiency and schema reliability
-            # Gemini 2.5 Flash / GPT-4o-mini lead on unit economics ($0.15/1M input)
-            gemini_run = next((r for r in successful if "gemini" in r.provider), None)
-            if gemini_run and gemini_run.schema_valid and gemini_run.completeness_score >= 80:
-                recommended_winner = gemini_run.model
-                recommendation_rationale = (
-                    f"{gemini_run.model} provides the optimal production balance: native Pydantic schema mode, "
-                    f"industry-leading token economics (${gemini_run.estimated_cost_usd:.6f}/run, ~$1.03/1k analyses), "
-                    f"and {gemini_run.latency_seconds:.2f}s latency."
-                )
-            else:
-                recommended_winner = highest_quality.model if highest_quality else fastest.model
-                recommendation_rationale = (
-                    f"{recommended_winner} achieved the highest evaluated analytical score ({highest_quality.quality_score if highest_quality else 0}%) "
-                    f"with valid structured JSON compliance."
-                )
+            # Objective multi-criteria scoring methodology:
+            # 1. Structural completeness (45% weight): measures adherence to the 5 mandatory analysis sections.
+            # 2. Measured latency efficiency (30% weight): normalized response speed.
+            # 3. Unit cost efficiency (25% weight): token economics based on published pricing.
+            min_latency = min(r.latency_seconds for r in successful)
+            max_latency = max(r.latency_seconds for r in successful)
+            latency_spread = max(max_latency - min_latency, 0.2)
+
+            costs = [r.estimated_cost_usd for r in successful if r.estimated_cost_usd is not None]
+            min_cost = min(costs) if costs else 0.0
+            max_cost = max(costs) if costs else 0.0
+            cost_spread = max(max_cost - min_cost, 0.0001)
+
+            scored_candidates = []
+            for r in successful:
+                # Completeness component (0 - 100)
+                comp_score = float(r.completeness_score)
+
+                # Latency component: fastest model gets 100, others scaled by delay
+                lat_score = max(0.0, 100.0 * (1.0 - (r.latency_seconds - min_latency) / latency_spread))
+
+                # Cost component: lowest cost model gets 100, others scaled
+                if r.estimated_cost_usd is not None and costs:
+                    cost_score = max(0.0, 100.0 * (1.0 - (r.estimated_cost_usd - min_cost) / cost_spread))
+                else:
+                    cost_score = 50.0
+
+                composite_score = round((comp_score * 0.45) + (lat_score * 0.30) + (cost_score * 0.25), 1)
+                scored_candidates.append({
+                    "result": r,
+                    "composite": composite_score,
+                    "comp": comp_score,
+                    "lat": lat_score,
+                    "cost": cost_score,
+                })
+
+            # Sort by composite score desc; tie-breakers: lowest latency, then lowest cost
+            scored_candidates.sort(
+                key=lambda x: (
+                    x["composite"],
+                    -x["result"].latency_seconds,
+                    -(x["result"].estimated_cost_usd or 999.0),
+                ),
+                reverse=True,
+            )
+
+            winner_item = scored_candidates[0]
+            winner_res = winner_item["result"]
+            recommended_winner = winner_res.model
+
+            mode_context = "simulated benchmark" if mock_mode else ("synthetic dataset evaluation" if is_synthetic else "live website evaluation")
+            cost_str = f"${winner_res.estimated_cost_usd:.6f}/run" if winner_res.estimated_cost_usd is not None else "N/A"
+            recommendation_rationale = (
+                f"{winner_res.model} ranked #1 in objective multi-criteria evaluation ({mode_context}) with a composite score of "
+                f"{winner_item['composite']}/100. Measured metrics: Structural completeness {winner_res.completeness_score}%, "
+                f"Latency {winner_res.latency_seconds:.2f}s, Estimated cost {cost_str}. "
+                f"Methodology weighted: 45% structural completeness, 30% latency efficiency, 25% cost economics."
+            )
+            if mock_mode:
+                recommendation_rationale += " Note: Results produced via deterministic simulation mode."
+            elif is_synthetic:
+                recommendation_rationale += " Note: Results produced using standard synthetic benchmark content."
 
         mode_label = "Synthetic benchmark dataset" if is_synthetic else "Live website extraction"
         if mock_mode:

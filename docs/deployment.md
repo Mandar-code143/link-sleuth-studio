@@ -1,24 +1,24 @@
 # LinkIntel AI Production Deployment Guide
 
-**Document Version:** 1.0  
-**Target Environments:** Cloud Containers (Docker), PaaS (Render / Railway / Fly.io / AWS ECS), Serverless Edge (Vercel / Cloudflare Pages / Netlify)
+**Document Version:** 2.0 (November 2026)  
+**Target Environments:** Cloud Containers (Docker), PaaS (Render / Railway / Fly.io / AWS ECS), Edge / Static Hosting (Vercel / Netlify / Cloudflare Pages)
 
 ---
 
 ## 1. Architecture & Deployment Topology
 
-LinkIntel AI is designed to deploy cleanly as two decoupled services:
+LinkIntel AI is designed to deploy cleanly as two decoupled, independently scalable tiers:
 
-1. **Backend Service:** FastAPI Python application running inside a lightweight Docker container or Python 3.10+ runtime, handling SSRF-protected link fetching and LLM orchestration.
-2. **Frontend Service:** TanStack Start React 19 application built via Vite and Nitro, deploying to edge networks (Vercel, Cloudflare, Netlify) or containerized with Node.js.
+1. **Python FastAPI Backend:** Runs in a container or Python 3.10+ runtime, handling SSRF-protected link fetching, content distillation, LLM inference, SQLite/PostgreSQL persistence, and multi-model benchmarking.
+2. **React 19 / TanStack Frontend:** Pre-rendered and built via Vite and Nitro, deploying to edge CDNs (Vercel, Netlify, Cloudflare Pages) or containerized with Node.js.
 
 ```mermaid
 flowchart LR
-    Client[End User Browser] --> CDN[Cloudflare Pages / Vercel Edge]
-    CDN -->|Static Assets & SSR| WebApp[TanStack Start React 19]
-    Client -->|API Requests: /link-analysis| Backend[FastAPI Backend / Docker]
-    Backend -->|Outbound Fetch| Internet[Public Internet Web Pages]
-    Backend -->|LLM Inference| AIStudio[Google AI Studio / OpenAI]
+    Browser[End User Browser] -->|Static Assets & UI| CDN[Cloudflare Pages / Vercel Edge]
+    Browser -->|API Requests: /link-analysis| Backend[FastAPI Backend / Docker]
+    Backend -->|SSRF-Safe Outbound Fetch| Internet[Public Internet Web Pages]
+    Backend -->|LLM API Calls| Providers[Google Gemini / OpenAI / Anthropic]
+    Backend -->|Persistence| DB[(SQLite / PostgreSQL)]
 ```
 
 ---
@@ -27,110 +27,137 @@ flowchart LR
 
 ### 2.1 Backend Environment Variables (`backend/.env`)
 
-| Variable Name       | Required?                    | Default Value                                 | Description                                                 |
-| :------------------ | :--------------------------- | :-------------------------------------------- | :---------------------------------------------------------- |
-| `GEMINI_API_KEY`    | **Yes** (if provider=gemini) | `""`                                          | Google Gemini API key from AI Studio                        |
-| `OPENAI_API_KEY`    | Optional                     | `""`                                          | OpenAI API key for `gpt-4o-mini` fallback                   |
-| `ANTHROPIC_API_KEY` | Optional                     | `""`                                          | Anthropic API key for `claude-3-5-haiku`                    |
-| `LLM_PROVIDER`      | No                           | `"gemini"`                                    | Active provider: `gemini`, `openai`, `anthropic`, or `mock` |
-| `GEMINI_MODEL`      | No                           | `"gemini-2.5-flash"`                          | Gemini model identifier                                     |
-| `OPENAI_MODEL`      | No                           | `"gpt-4o-mini"`                               | OpenAI model identifier                                     |
-| `PORT`              | No                           | `4000`                                        | Local or container listener port                            |
-| `HOST`              | No                           | `"0.0.0.0"`                                   | Network binding interface                                   |
-| `CORS_ORIGINS`      | No                           | `http://localhost:3000,http://localhost:5173` | Comma-separated list of permitted frontend origins          |
-| `CACHE_TTL_SECONDS` | No                           | `3600`                                        | In-memory cache duration for audited websites (1 hour)      |
-| `MAX_CONTENT_BYTES` | No                           | `5242880`                                     | Maximum response payload size for web extraction (5 MB)     |
-| `ENVIRONMENT`       | No                           | `"production"`                                | Environment mode: `production` or `development`             |
+| Variable Name | Required? | Default Value | Description |
+|---|---|---|---|
+| `GEMINI_API_KEY` | **Yes** (for primary model) | `""` | Google Gemini API key from Google AI Studio. |
+| `OPENAI_API_KEY` | Optional | `""` | OpenAI API key for `gpt-4o-mini` fallback and comparative benchmarking. |
+| `ANTHROPIC_API_KEY` | Optional | `""` | Anthropic API key for `claude-3-5-haiku`. |
+| `LLM_PROVIDER` | No | `"gemini"` | Active provider: `gemini`, `openai`, `anthropic`, or `mock`. |
+| `LLM_MODEL` | No | `"gemini-2.5-flash"` | Active model identifier. |
+| `APP_PORT` / `PORT` | No | `4000` | Port the backend listens on (automatically detects platform-assigned `$PORT`). |
+| `FRONTEND_ORIGINS` | No | `http://localhost:8080,...` | Comma-separated list of permitted frontend origins for CORS. |
+| `DATABASE_URL` | No | `sqlite:///./linkintel.db` | Database connection string. Use PostgreSQL for ephemeral cloud hosting. |
+| `TRUSTED_PROXIES` | No | `127.0.0.1,::1,localhost` | Trusted reverse proxy IPs permitted to forward `X-Forwarded-For`. |
+| `CACHE_TTL_SECONDS` | No | `3600` | Duration (seconds) to cache audited websites in memory. |
+| `APP_ENV` | No | `"production"` | Runtime environment: `production` or `development`. |
+
+> **Important Database Note on Ephemeral Hosting:**
+> The default `sqlite:///./linkintel.db` works out-of-the-box for local execution, Docker volumes, and single-instance VMs with persistent disks. On ephemeral PaaS containers (such as free-tier Render or Railway without persistent volumes), container restarts recreate the filesystem. For production durability, configure a managed PostgreSQL database URL (e.g., via Neon, Supabase, or AWS RDS):
+> `DATABASE_URL=postgresql://user:password@host:5432/linkintel`
 
 ### 2.2 Frontend Environment Variables (`.env.production`)
 
-| Variable Name       | Required? | Default Value           | Description                                  |
-| :------------------ | :-------- | :---------------------- | :------------------------------------------- |
-| `VITE_API_BASE_URL` | No        | `http://localhost:4000` | Base URL of deployed FastAPI backend service |
+| Variable Name | Required? | Default Value | Description |
+|---|---|---|---|
+| `VITE_API_BASE_URL` | No | `http://localhost:4000` | Base URL of deployed FastAPI backend service. |
 
 ---
 
 ## 3. Containerized Backend Deployment (Docker)
 
-The repository provides a production multi-stage Dockerfile located at `backend/Dockerfile`.
+The repository provides a production multi-stage Dockerfile located at `backend/Dockerfile` that dynamically respects cloud-assigned ports (`$PORT`).
 
-### 3.1 Build & Run Locally with Docker
+### 3.1 Build & Run with Docker
 
 ```bash
-# 1. Build Docker image
+# 1. Build image from repository root
 docker build -t linkintel-backend:latest -f backend/Dockerfile backend
 
-# 2. Run container with credentials
+# 2. Run container with credentials and persistent volume
 docker run -d \
   --name linkintel-api \
   -p 4000:4000 \
   -e GEMINI_API_KEY="AIzaSy..." \
   -e LLM_PROVIDER="gemini" \
-  -e CORS_ORIGINS="https://linkintel.yourdomain.com,http://localhost:3000" \
+  -e FRONTEND_ORIGINS="https://your-frontend.vercel.app,http://localhost:8080" \
+  -v linkintel-data:/app \
   linkintel-backend:latest
 ```
 
 ### 3.2 Verify Running Container
 
 ```bash
-# Health check
+# 1. Liveness check
 curl -f http://localhost:4000/health
-# Response: {"status":"ok","timestamp":"...","version":"1.0.0","service":"LinkIntel AI"}
+# Response: {"status":"ok"}
 
-# Interactive OpenAPI docs
-# Open browser at http://localhost:4000/docs
+# 2. Deep readiness check (verifies credentials without leaking them)
+curl -f http://localhost:4000/health/ready
+# Response: {"status":"ready","provider":"gemini","provider_key_present":true,...}
+
+# 3. Interactive OpenAPI documentation
+# Open http://localhost:4000/docs in your browser
 ```
 
 ---
 
-## 4. Cloud Platform Deployment Recipes
+## 4. Step-by-Step Cloud Platform Deployment Recipes
 
-### 4.1 Deploying Backend to Render.com
+### 4.1 Deploying Backend to Render.com (Recommended for FastAPI)
 
-1. Create a **New Web Service** connected to your GitHub repository.
-2. Set **Root Directory** to `backend`.
-3. Set **Runtime** to `Python 3`.
-4. Set **Build Command:**
-   ```bash
-   pip install --upgrade pip && pip install -r requirements.txt
-   ```
-5. Set **Start Command:**
-   ```bash
-   uvicorn app.main:app --host 0.0.0.0 --port $PORT
-   ```
-6. Add Environment Secrets in the Render dashboard:
-   - `GEMINI_API_KEY`: `<your_api_key>`
+1. Log in to [Render Dashboard](https://dashboard.render.com).
+2. Click **New +** and select **Web Service**.
+3. Connect your GitHub repository: `https://github.com/Mandar-code143/link-sleuth-studio`.
+4. Configure service settings:
+   - **Name:** `linkintel-api`
+   - **Root Directory:** `backend`
+   - **Runtime:** `Python 3`
+   - **Build Command:** `pip install --upgrade pip && pip install -r requirements.txt`
+   - **Start Command:** `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
+5. Add **Environment Variables** in Render dashboard:
+   - `GEMINI_API_KEY`: *(your Gemini API key)*
    - `LLM_PROVIDER`: `gemini`
-   - `CORS_ORIGINS`: `https://<your-frontend-app>.vercel.app`
-7. Set Health Check path to `/health`.
+   - `FRONTEND_ORIGINS`: `https://link-sleuth-studio.pages.dev,https://your-app.vercel.app`
+   - `APP_ENV`: `production`
+6. Set **Health Check Path** to `/health/ready`.
+7. Click **Create Web Service**.
+8. Once deployed, note your service URL (e.g., `https://linkintel-api.onrender.com`). Verify that `https://linkintel-api.onrender.com/docs` opens the Swagger UI.
 
 ### 4.2 Deploying Backend to Railway.app
 
-1. From the Railway dashboard, select **Deploy from GitHub repo**.
-2. Set root directory to `/backend`.
-3. Railway automatically detects `backend/Dockerfile`.
-4. Add environment variables in Railway settings (`GEMINI_API_KEY`, `CORS_ORIGINS`).
-5. Configure public networking domain and port `4000`.
+1. Log in to [Railway](https://railway.app) and click **New Project** → **Deploy from GitHub repo**.
+2. Select repository `link-sleuth-studio`.
+3. In service settings:
+   - Set **Root Directory** to `/backend`.
+   - Railway will auto-detect the `Dockerfile`.
+4. In the **Variables** tab, add `GEMINI_API_KEY`, `LLM_PROVIDER=gemini`, and `FRONTEND_ORIGINS`.
+5. Under **Networking**, click **Generate Domain** to get your public API URL.
 
-### 4.3 Deploying Frontend to Vercel / Cloudflare Pages
+### 4.3 Deploying Frontend to Vercel / Netlify / Cloudflare Pages
 
-The frontend uses standard Vite and TanStack Start Nitro output.
+The frontend produces standard production assets via Vite / Nitro.
 
-#### Deploy via Vercel:
+#### Deploying on Vercel:
+1. Go to [Vercel Dashboard](https://vercel.com) and click **Add New...** → **Project**.
+2. Import `Mandar-code143/link-sleuth-studio`.
+3. Set **Framework Preset:** `Vite` (or `Other`).
+4. Set **Build Command:** `pnpm run build`
+5. Set **Output Directory:** `.output/public`
+6. Add Environment Variable:
+   - `VITE_API_BASE_URL`: `https://linkintel-api.onrender.com` (your deployed backend URL)
+7. Click **Deploy**.
 
-1. Connect your repository to Vercel.
-2. Root directory: `./` (root).
-3. Framework Preset: **Other / Vite**.
-4. Build Command: `pnpm run build`
-5. Output Directory: `.output/public`
-6. Environment Variables:
-   - `VITE_API_BASE_URL`: `https://<your-deployed-backend-service>.onrender.com`
+#### Deploying on Cloudflare Pages:
+1. Go to Cloudflare Dashboard → **Workers & Pages** → **Create application** → **Pages**.
+2. Connect Git repository.
+3. Build configuration:
+   - **Framework preset:** `None`
+   - **Build command:** `npm run build`
+   - **Build output directory:** `.output/public`
+4. Add environment variable:
+   - `VITE_API_BASE_URL`: `https://linkintel-api.onrender.com`
+5. Click **Save and Deploy**.
 
 ---
 
-## 5. Security & Egress Hardening in Production
+## 5. Production Security Verification Checklist
 
-1. **SSRF Guardrails:** The backend includes full RFC1918, CGNAT, loopback, and cloud metadata blocking (`dns_validator.py` and `safe_fetcher.py`).
-2. **Cloud Metadata Defense:** In AWS, enable **IMDSv2** with hop limit = 1 to prevent metadata token access even in misconfigured containers.
-3. **CORS Whitelisting:** Ensure `CORS_ORIGINS` in production explicitly restricts origins to your verified frontend domain rather than wildcard `*`.
-4. **Rate Limiting:** Deploy Cloudflare or a reverse proxy (e.g. Nginx or Traefik) in front of the FastAPI backend with rate limiting rules (e.g. 60 requests/minute per client IP).
+Before opening the application to external users:
+
+- [x] **No Committed Secrets:** Repository `.gitignore` excludes `.env`, `linkintel.db`, and local task logs.
+- [x] **SSRF Guardrails:** Target URLs are validated against private IPs, loopback, link-local, and cloud metadata (`169.254.169.254`).
+- [x] **DNS Rebinding Defense:** Outbound connections use pinned DNS transport directly to pre-validated IP addresses.
+- [x] **Rate Limiting:** Sliding-window rate limiter active (60 requests/minute per client IP).
+- [x] **CORS Isolation:** `FRONTEND_ORIGINS` explicitly configured without permissive wildcard `*`.
+- [x] **Error Shielding:** No internal stack traces, system paths, or raw exception strings leaked in HTTP responses.
+- [x] **Documentation Access:** Public OpenAPI / Swagger documentation active at `/docs`.

@@ -194,17 +194,45 @@ class TestRateLimiter:
         assert "Rate limit exceeded" in exc_info.value.detail["message"]
 
     @pytest.mark.asyncio
-    async def test_rate_limiter_uses_x_forwarded_for(self):
+    async def test_rate_limiter_uses_x_forwarded_for_from_trusted_proxy(self):
+        """When direct peer is a trusted reverse proxy (127.0.0.1), forwarded IP is trusted."""
         limiter = SimpleRateLimiter(max_requests=1, window_seconds=60)
         req = AsyncMock()
-        req.headers = {"X-Forwarded-For": "203.0.113.195, 10.0.0.1"}
-        req.client.host = "10.0.0.1"
+        req.headers = {"X-Forwarded-For": "203.0.113.195, 127.0.0.1"}
+        req.client.host = "127.0.0.1"
 
         await limiter(req)
 
         with pytest.raises(HTTPException) as exc_info:
             await limiter(req)
         assert exc_info.value.status_code == 429
+
+    @pytest.mark.asyncio
+    async def test_rate_limiter_ignores_x_forwarded_for_from_untrusted_peer(self):
+        """When direct peer is NOT a trusted proxy, X-Forwarded-For is ignored to prevent IP spoofing."""
+        from app.api.routes import get_client_ip
+        req = AsyncMock()
+        req.headers = {"X-Forwarded-For": "203.0.113.195"}
+        req.client.host = "198.51.100.77"
+
+        # Direct peer is untrusted; client IP must be the peer IP, not spoofed header
+        extracted = get_client_ip(req)
+        assert extracted == "198.51.100.77"
+
+    def test_workspace_cache_isolation(self):
+        """Verify that cache keys isolate data between different workspaces."""
+        from app.utils.cache import TTLMemoryCache
+        cache = TTLMemoryCache(ttl_seconds=60)
+
+        # Store result in workspace_a
+        cache.set("workspace_a::https://example.com::gemini::gemini-2.5-flash", {"data": "workspace_a_report"})
+
+        # workspace_a should hit
+        assert cache.get("workspace_a::https://example.com::gemini::gemini-2.5-flash") == {"data": "workspace_a_report"}
+
+        # workspace_b should miss
+        assert cache.get("workspace_b::https://example.com::gemini::gemini-2.5-flash") is None
+
 
 
 class TestPinnedTransport:

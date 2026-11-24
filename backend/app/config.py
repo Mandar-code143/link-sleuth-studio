@@ -68,6 +68,12 @@ class Settings(BaseSettings):
         alias="FRONTEND_ORIGINS",
     )
 
+    # Trusted reverse proxy IPs for X-Forwarded-For header evaluation (comma-separated)
+    trusted_proxies: str = Field(
+        default="127.0.0.1,::1,localhost",
+        alias="TRUSTED_PROXIES",
+    )
+
     # Database persistence URL (SQLite by default, PostgreSQL in production)
     database_url: str = Field(default="sqlite:///./linkintel.db", alias="DATABASE_URL")
 
@@ -134,6 +140,15 @@ class Settings(BaseSettings):
             if cleaned and cleaned not in origins:
                 origins.append(cleaned)
         return origins
+
+    @property
+    def parsed_trusted_proxies(self) -> List[str]:
+        proxies = []
+        for proxy in self.trusted_proxies.split(","):
+            cleaned = proxy.strip().lower()
+            if cleaned and cleaned not in proxies:
+                proxies.append(cleaned)
+        return proxies
 
     def safe_diagnostic_report(self) -> dict:
         """Returns safe environment and diagnostic information with masked secrets."""

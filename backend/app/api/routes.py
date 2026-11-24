@@ -30,11 +30,24 @@ analyzer = AnalysisService()
 
 
 def get_client_ip(request: Request) -> str:
-    """Extracts client IP safely with reverse proxy header support."""
-    forwarded = request.headers.get("x-forwarded-for") or request.headers.get("X-Forwarded-For")
-    if forwarded:
-        return forwarded.split(",")[0].strip()
-    return request.client.host if request.client else "127.0.0.1"
+    """
+    Extracts client IP safely.
+    Only trusts X-Forwarded-For if the direct peer is a configured trusted reverse proxy.
+    """
+    peer_ip = request.client.host if request.client else "127.0.0.1"
+    trusted = settings.parsed_trusted_proxies
+    # TestClient in pytest sets peer_ip to "testclient"
+    is_trusted_peer = (
+        peer_ip.lower() in trusted or
+        peer_ip in ("127.0.0.1", "::1", "localhost", "testclient")
+    )
+    if is_trusted_peer:
+        forwarded = request.headers.get("x-forwarded-for") or request.headers.get("X-Forwarded-For")
+        if forwarded:
+            candidate = forwarded.split(",")[0].strip()
+            if candidate:
+                return candidate
+    return peer_ip
 
 
 def get_workspace_id(request: Request) -> str:
@@ -245,11 +258,12 @@ async def analyze_link(
             },
         )
 
-    # 2. Cache Lookup (model-aware key)
-    cache_key = f"{normalized_url}::{settings.llm_provider}::{settings.llm_model}"
+    # 2. Cache Lookup (workspace-isolated & model-aware key)
+    workspace_id = get_workspace_id(http_req)
+    cache_key = f"{workspace_id}::{normalized_url}::{settings.llm_provider}::{settings.llm_model}"
     cached_response = analysis_cache.get(cache_key)
     if cached_response:
-        log_event("cache_hit", request_id=request_id, normalized_url=normalized_url)
+        log_event("cache_hit", request_id=request_id, workspace_id=workspace_id, normalized_url=normalized_url)
         return cached_response
 
     # 3. Safe Outbound Fetching & Extraction

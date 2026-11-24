@@ -11,7 +11,7 @@ from ..schemas.response import Competitor, Evidence
 
 logger = logging.getLogger("linkintel.competitor")
 
-# Known review aggregators and search engines that should not be classified as competitors
+# Known review aggregators, search engines, and social/news portals that should not be classified as competitors
 AGGREGATOR_DOMAINS: Set[str] = {
     "wikipedia.org",
     "g2.com",
@@ -37,6 +37,22 @@ AGGREGATOR_DOMAINS: Set[str] = {
     "bing.com",
     "duckduckgo.com",
     "yahoo.com",
+    "amazon.com",
+    "ebay.com",
+    "pinterest.com",
+    "glassdoor.com",
+    "indeed.com",
+    "stackoverflow.com",
+    "tiktok.com",
+    "techradar.com",
+    "pcmag.com",
+    "zdnet.com",
+    "cnet.com",
+    "softwareadvice.com",
+    "getapp.com",
+    "clutch.co",
+    "upwork.com",
+    "fiverr.com",
 }
 
 
@@ -81,6 +97,98 @@ class CompetitorResearchService:
 
         return []
 
+    def _build_candidate(
+        self,
+        title: str,
+        snippet: str,
+        target_url: str,
+        brand_name: str,
+        category: str,
+        submitted_domain: str,
+        seen_domains: Set[str],
+    ) -> Optional[Competitor]:
+        """
+        Validates, filters, and builds an attributable Competitor candidate.
+        Returns None if the result is an aggregator, duplicate, self-reference, or irrelevant directory listicle.
+        """
+        if not target_url or not target_url.startswith("http"):
+            return None
+
+        parsed_url = urlparse(target_url)
+        netloc = parsed_url.netloc.lower().replace("www.", "")
+
+        if not netloc:
+            return None
+
+        # Check self-domain, seen domains, and known aggregator/portal networks
+        sub_clean = submitted_domain.lower().replace("www.", "").strip()
+        if sub_clean and (netloc == sub_clean or netloc.endswith(f".{sub_clean}")):
+            return None
+
+        if netloc in seen_domains:
+            return None
+
+        if any(agg in netloc for agg in AGGREGATOR_DOMAINS):
+            return None
+
+        # Check for generic blog post / listicle paths without distinct product identity
+        lower_path = parsed_url.path.lower()
+        if any(p in lower_path for p in ("/blog/", "/article/", "/news/", "/press/")) and any(
+            t in title.lower() for t in ("top 10", "top 5", "alternatives to", "vs ", "best ")
+        ):
+            return None
+
+        # Extract plausible company name from title or netloc
+        clean_title = re.split(r" - | \| | : | — ", title)[0].strip()
+        generic_prefixes = ("top ", "best ", "the best ", "10 best ", "alternatives to ", "compare ")
+        if any(clean_title.lower().startswith(p) for p in generic_prefixes) or len(clean_title) > 40 or brand_name.lower() in clean_title.lower():
+            comp_name = netloc.split(".")[0].capitalize()
+        else:
+            comp_name = clean_title or netloc.split(".")[0].capitalize()
+
+        # Determine direct vs indirect competitor type
+        clean_cat = (category or "").lower()
+        snippet_lower = (snippet or "").lower()
+        title_lower = (title or "").lower()
+
+        is_direct = any(term in snippet_lower or term in title_lower for term in clean_cat.split() if len(term) > 3)
+        comp_type = "direct" if is_direct else "indirect"
+
+        # Observed strengths & gaps derived contextually without invented factual metrics
+        observed_strengths = []
+        if "enterprise" in snippet_lower:
+            observed_strengths.append("Enterprise positioning and deployment focus")
+        if "open source" in snippet_lower or "open-source" in snippet_lower:
+            observed_strengths.append("Open source or community-supported model")
+        if "api" in snippet_lower or "developer" in snippet_lower:
+            observed_strengths.append("Developer-facing API or SDK integration")
+        if not observed_strengths:
+            observed_strengths = [
+                f"Active commercial web presence in the {category.strip() or 'industry'} category",
+                "Attributable search discovery footprint",
+            ]
+
+        observed_gaps = [
+            f"Detailed capability parity against {brand_name.strip()} requires live feature-by-feature evaluation"
+        ]
+
+        seen_domains.add(netloc)
+
+        return Competitor(
+            name=comp_name,
+            website=f"https://{netloc}",
+            category=f"{category.strip() or 'Industry'} competitor",
+            description=snippet[:250].strip() if snippet else f"Attributable commercial peer operating in the {category.strip() or 'target'} market space.",
+            strengths=observed_strengths,
+            gaps=observed_gaps,
+            positioning=f"{comp_type.capitalize()} market peer to {brand_name.strip()} operating under domain {netloc}.",
+            opportunity=f"Differentiate {brand_name.strip()} through specialized features, superior developer experience, and transparent pricing.",
+            evidence="verified",
+            source_urls=[target_url],
+            confidence=0.85,
+            competitor_type=comp_type,
+        )
+
     async def _search_duckduckgo(
         self,
         query: str,
@@ -103,7 +211,7 @@ class CompetitorResearchService:
 
             soup = BeautifulSoup(res.text, "html.parser")
             candidates: List[Competitor] = []
-            seen_domains = {submitted_domain.lower()}
+            seen_domains = {submitted_domain.lower().replace("www.", "")}
 
             for result in soup.find_all("div", class_="result"):
                 link_tag = result.find("a", class_="result__url")
@@ -114,7 +222,6 @@ class CompetitorResearchService:
                     continue
 
                 raw_href = link_tag.get("href", "").strip()
-                # Parse true destination if DuckDuckGo wrapped link
                 if "uddg=" in raw_href:
                     import urllib.parse
                     parsed = urllib.parse.parse_qs(urllib.parse.urlparse(raw_href).query)
@@ -122,39 +229,22 @@ class CompetitorResearchService:
                 else:
                     target_url = raw_href
 
-                parsed_url = urlparse(target_url)
-                netloc = parsed_url.netloc.lower().replace("www.", "")
-
-                if not netloc or netloc in seen_domains or any(agg in netloc for agg in AGGREGATOR_DOMAINS):
-                    continue
-
-                seen_domains.add(netloc)
                 title = title_tag.get_text().strip()
                 snippet = snippet_tag.get_text().strip() if snippet_tag else ""
 
-                # Extract plausible company name from title or domain
-                comp_name = title.split(" - ")[0].split(" | ")[0].split(" : ")[0].strip()
-                if len(comp_name) > 40 or brand_name.lower() in comp_name.lower():
-                    comp_name = netloc.split(".")[0].capitalize()
-
-                candidates.append(
-                    Competitor(
-                        name=comp_name,
-                        website=f"https://{netloc}",
-                        category=f"Competitor in {clean_brand} market space",
-                        description=snippet[:250] if snippet else f"Verified industry peer and alternative service provider.",
-                        strengths=["Established commercial presence", "Direct search discovery match"],
-                        gaps=["Requires deeper feature-by-feature evaluation"],
-                        positioning=f"Market alternative to {clean_brand} operating in the same sector.",
-                        opportunity="Differentiate through transparent onboarding, superior DX, and specialized domain expertise.",
-                        evidence="verified",
-                        source_urls=[target_url],
-                        confidence=0.85,
-                    )
+                candidate = self._build_candidate(
+                    title=title,
+                    snippet=snippet,
+                    target_url=target_url,
+                    brand_name=brand_name,
+                    category=brand_name,
+                    submitted_domain=submitted_domain,
+                    seen_domains=seen_domains,
                 )
-
-                if len(candidates) >= 3:
-                    break
+                if candidate:
+                    candidates.append(candidate)
+                    if len(candidates) >= 3:
+                        break
 
             return candidates
 
@@ -172,34 +262,26 @@ class CompetitorResearchService:
             data = res.json()
             results = data.get("web", {}).get("results", [])
             candidates: List[Competitor] = []
-            seen_domains = {submitted_domain.lower()}
+            seen_domains = {submitted_domain.lower().replace("www.", "")}
 
             for item in results:
                 target_url = item.get("url", "")
-                netloc = urlparse(target_url).netloc.lower().replace("www.", "")
-                if not netloc or netloc in seen_domains or any(agg in netloc for agg in AGGREGATOR_DOMAINS):
-                    continue
-                seen_domains.add(netloc)
+                title = item.get("title", "")
+                snippet = item.get("description", "")
 
-                name = item.get("title", "").split(" - ")[0].split(" | ")[0].strip()
-                desc = item.get("description", "")
-                candidates.append(
-                    Competitor(
-                        name=name or netloc.split(".")[0].capitalize(),
-                        website=f"https://{netloc}",
-                        category="Industry competitor",
-                        description=desc[:250] if desc else "Verified industry competitor discovered via web search.",
-                        strengths=["Indexed market alternative", "Commercial web footprint"],
-                        gaps=["Detailed positioning requires ongoing monitoring"],
-                        positioning="Direct industry alternative in the same sector.",
-                        opportunity="Differentiate through transparent pricing and modern integrations.",
-                        evidence="verified",
-                        source_urls=[target_url],
-                        confidence=0.85,
-                    )
+                candidate = self._build_candidate(
+                    title=title,
+                    snippet=snippet,
+                    target_url=target_url,
+                    brand_name=brand_name,
+                    category=brand_name,
+                    submitted_domain=submitted_domain,
+                    seen_domains=seen_domains,
                 )
-                if len(candidates) >= 3:
-                    break
+                if candidate:
+                    candidates.append(candidate)
+                    if len(candidates) >= 3:
+                        break
 
             return candidates
 
@@ -216,34 +298,26 @@ class CompetitorResearchService:
             data = res.json()
             results = data.get("results", [])
             candidates: List[Competitor] = []
-            seen_domains = {submitted_domain.lower()}
+            seen_domains = {submitted_domain.lower().replace("www.", "")}
 
             for item in results:
                 target_url = item.get("url", "")
-                netloc = urlparse(target_url).netloc.lower().replace("www.", "")
-                if not netloc or netloc in seen_domains or any(agg in netloc for agg in AGGREGATOR_DOMAINS):
-                    continue
-                seen_domains.add(netloc)
-
-                name = item.get("title", "").split(" - ")[0].split(" | ")[0].strip()
+                title = item.get("title", "")
                 snippet = item.get("content", "")
-                candidates.append(
-                    Competitor(
-                        name=name or netloc.split(".")[0].capitalize(),
-                        website=f"https://{netloc}",
-                        category="Industry peer",
-                        description=snippet[:250] if snippet else "Verified industry competitor discovered via AI search index.",
-                        strengths=["Verified commercial presence", "Relevant search topical cluster"],
-                        gaps=["Competitive specifics require direct benchmark"],
-                        positioning="Direct industry peer in target market.",
-                        opportunity="Highlight specialized domain features and faster time-to-value.",
-                        evidence="verified",
-                        source_urls=[target_url],
-                        confidence=0.85,
-                    )
+
+                candidate = self._build_candidate(
+                    title=title,
+                    snippet=snippet,
+                    target_url=target_url,
+                    brand_name=brand_name,
+                    category=brand_name,
+                    submitted_domain=submitted_domain,
+                    seen_domains=seen_domains,
                 )
-                if len(candidates) >= 3:
-                    break
+                if candidate:
+                    candidates.append(candidate)
+                    if len(candidates) >= 3:
+                        break
 
             return candidates
 

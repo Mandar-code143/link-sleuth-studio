@@ -25,6 +25,7 @@ class Competitor(BaseModel):
     evidence: Evidence = Field(default="inferred", description="Provenance of this competitor entry.")
     source_urls: List[str] = Field(default_factory=list, description="Attributable external source links.")
     confidence: Optional[float] = Field(default=None, description="Confidence score if assessed.")
+    competitor_type: Optional[str] = Field(default="direct", description="Competitor classification: direct, indirect, or inferred_alternative.")
 
 
 class SearchQuery(BaseModel):

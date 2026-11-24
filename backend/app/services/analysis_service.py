@@ -394,6 +394,10 @@ Extracted Content:
                 on_page_text=extraction.main_content,
                 verified_sources=verified_sources,
             )
+            # If evidence is inferred, ensure source_urls does not contain unverified links
+            if comp.evidence == "inferred":
+                comp.source_urls = []
+                comp.competitor_type = "inferred_alternative"
 
         # Ensure exactly 5 search queries with collective 5-platform coverage
         queries = self.normalize_search_queries(

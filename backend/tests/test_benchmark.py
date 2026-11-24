@@ -146,3 +146,53 @@ def test_benchmark_endpoint_mock_mode_via_api():
         assert r["simulated"] is True
         assert r["status"] == "success"
 
+
+@pytest.mark.asyncio
+async def test_live_benchmark_extraction_failure_never_falls_back_to_synthetic():
+    """
+    Regression test: Live benchmark extraction failure must return an explicit failed result.
+    It must NEVER silently fall back to STANDARD_BENCHMARK_CONTENT or report synthetic success.
+    """
+    service = BenchmarkService()
+    # Mock extractor.extract to simulate a network or scraping failure
+    with patch.object(service.extractor, "extract", side_effect=RuntimeError("DNS resolution failed for test host")):
+        req = BenchmarkRunRequest(
+            url="https://unreachable-live-site.test",
+            benchmark_mode="live",
+            mock_mode=False,
+            providers=["gemini", "openai"],
+        )
+        res = await service.run_benchmark(req)
+
+        assert res.benchmark_mode == "live"
+        assert res.is_simulated is False
+        assert "Live benchmark failed" in res.summary
+        assert res.recommended_winner is None
+        assert len(res.results) == 2
+        for r in res.results:
+            assert r.status == "failed"
+            assert r.error_code == "LIVE_EXTRACTION_FAILED"
+            assert "never fall back to synthetic" in r.error.lower()
+
+
+@pytest.mark.asyncio
+async def test_neutral_model_recommendation_logic():
+    """
+    Verify recommendation methodology is neutral, multi-criteria (completeness, latency, cost),
+    and does not pre-select any specific provider by default.
+    """
+    service = BenchmarkService()
+    req = BenchmarkRunRequest(
+        url="https://acmecloud.example",
+        mock_mode=True,
+        benchmark_mode="synthetic",
+        providers=["gemini", "openai", "anthropic"],
+    )
+    res = await service.run_benchmark(req)
+
+    assert res.recommended_winner is not None
+    assert "composite score of" in res.recommendation_rationale
+    assert "45% structural completeness, 30% latency efficiency, 25% cost economics" in res.recommendation_rationale
+    assert "simulated benchmark" in res.recommendation_rationale or "simulation mode" in res.recommendation_rationale
+
+

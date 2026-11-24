@@ -1,0 +1,9 @@
+{
+  "success": false,
+  "detail": "Prohibited non-public network address: 127.0.0.1. Requests to private, loopback, or cloud metadata endpoints are strictly blocked.",
+  "error": {
+    "code": "SECURITY_POLICY_VIOLATION",
+    "message": "Prohibited non-public network address: 127.0.0.1. Requests to private, loopback, or cloud metadata endpoints are strictly blocked."
+  },
+  "request_id": "req-blocked-ssrf-001"
+}

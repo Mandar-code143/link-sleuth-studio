@@ -1,0 +1,14 @@
+{
+  "liveness": {
+    "status": "ok"
+  },
+  "readiness": {
+    "status": "ready",
+    "provider": "gemini",
+    "model": "gemini-2.5-flash",
+    "provider_key_present": true,
+    "search_provider": "duckduckgo",
+    "search_provider_configured": true,
+    "app_env": "production"
+  }
+}

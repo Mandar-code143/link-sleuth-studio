@@ -1,0 +1,328 @@
+{
+  "success": true,
+  "website": "https://northstarstudio.example",
+  "brand": {
+    "name": "Northstar Studio",
+    "category": "Brand Strategy & Digital Experience Design",
+    "summary": "Independent design and brand strategy studio partnering with early-stage tech founders to craft differentiated, high-converting digital products."
+  },
+  "analysis": {
+    "competitor_analysis": {
+      "overview": "The digital brand strategy and product design landscape is populated by enterprise digital agencies, specialized boutique studios, and freelance design networks. Northstar Studio positions itself in the high-agility, founder-accessible bracket.",
+      "competitors": [
+        {
+          "name": "DesignCraft Consultancy",
+          "website": "https://designcraft.example",
+          "category": "Enterprise Brand Agency",
+          "description": "Full-service digital agency focused on multi-quarter brand transformations for mid-market and enterprise firms.",
+          "strengths": [
+            "Extensive enterprise portfolio and global presence",
+            "Multi-disciplinary teams across design and front-end engineering"
+          ],
+          "gaps": [
+            "Heavy agency overhead and high minimum retainer requirements",
+            "Slower deployment cadence for early-stage iterative releases"
+          ],
+          "positioning": "Targets mature enterprise clients seeking comprehensive agency management.",
+          "opportunity": "Win seed and Series A founders through agile 4-week design sprints and direct principal engagement.",
+          "evidence": "verified",
+          "source_urls": [
+            "https://designcraft.example"
+          ],
+          "confidence": 0.88,
+          "competitor_type": "direct"
+        },
+        {
+          "name": "SprintStudio",
+          "website": "https://sprintstudio.example",
+          "category": "Fast-Turnaround UI Studio",
+          "description": "Product design studio offering weekly subscription tiers for UI component creation and visual asset updates.",
+          "strengths": [
+            "Transparent subscription pricing",
+            "Predictable weekly delivery cycles"
+          ],
+          "gaps": [
+            "Limited foundational brand strategy and market positioning depth",
+            "Less customization for bespoke investor pitches"
+          ],
+          "positioning": "Targets cost-conscious startups needing recurring UI production tasks.",
+          "opportunity": "Emphasize high-leverage brand positioning that impacts investor perception and customer conversion.",
+          "evidence": "verified",
+          "source_urls": [
+            "https://sprintstudio.example"
+          ],
+          "confidence": 0.85,
+          "competitor_type": "direct"
+        },
+        {
+          "name": "Apex Brand Partners",
+          "website": "https://apexbrand.example",
+          "category": "Corporate Identity Consultancy",
+          "description": "Traditional branding firm specializing in naming, typography guidelines, and corporate rebrands.",
+          "strengths": [
+            "Deep typographic and identity expertise",
+            "Established corporate client trust"
+          ],
+          "gaps": [
+            "Less focused on interactive digital UI/UX software products",
+            "Steep multi-month engagement timelines"
+          ],
+          "positioning": "High-end corporate identity consultancy.",
+          "opportunity": "Offer turnkey integration between brand identity and modern web application interfaces.",
+          "evidence": "inferred",
+          "source_urls": [],
+          "confidence": 0.78,
+          "competitor_type": "inferred_alternative"
+        }
+      ],
+      "strengths": [
+        "Founder-led agile engagement with direct principal communication",
+        "Deep integration of brand strategy with modern React/web application design",
+        "Transparent milestone delivery"
+      ],
+      "weaknesses": [
+        "Smaller team bandwidth compared to multi-office global agencies",
+        "Geographic concentration in primary tech hubs"
+      ],
+      "advantages": [
+        "10x faster sprint turnaround than legacy agency retainers",
+        "Direct alignment with venture-backed software founders"
+      ],
+      "opportunities": [
+        "Package standardized 'Seed-to-Series A Brand Acceleration' sprint packages",
+        "Publish teardowns of early-stage SaaS positioning to drive inbound discovery"
+      ],
+      "evidence": [
+        "https://northstarstudio.example"
+      ]
+    },
+    "target_search_queries": [
+      {
+        "query": "early stage startup brand strategy agency",
+        "platforms": ["Google"],
+        "intent": "Commercial",
+        "relevance": "High-intent organic search capturing founders actively evaluating brand design agencies.",
+        "audience": "Seed and Series A Startup Founders"
+      },
+      {
+        "query": "b2b saas product design studio recommendations",
+        "platforms": ["LinkedIn"],
+        "intent": "Informational",
+        "relevance": "Captures peer recommendations and professional network evaluations among tech executives.",
+        "audience": "VP of Product and Chief Product Officers"
+      },
+      {
+        "query": "founder led brand sprint vs agency retainer",
+        "platforms": ["X"],
+        "intent": "Transactional",
+        "relevance": "Real-time tech founder discussions comparing agency models and looking for agile studio partners.",
+        "audience": "Technical Founders and Solo Entrepreneurs"
+      },
+      {
+        "query": "minimalist tech brand identity case study",
+        "platforms": ["Instagram"],
+        "intent": "Navigational",
+        "relevance": "Visual discovery of portfolio case studies, typography, and aesthetic craft.",
+        "audience": "Design Leads, Brand Directors, and Early Adopters"
+      },
+      {
+        "query": "best web design studio for fintech startups review",
+        "platforms": ["Facebook"],
+        "intent": "Commercial",
+        "relevance": "Private entrepreneurial groups and founder communities seeking vetted recommendations.",
+        "audience": "SMB Owners and Accelerators Alumni"
+      }
+    ],
+    "seo_improvements": {
+      "primary_keyword": "startup brand strategy agency",
+      "secondary_keywords": [
+        "b2b saas product design",
+        "fintech brand identity",
+        "agile brand sprint"
+      ],
+      "long_tail_keywords": [
+        "how to position early stage software brand for venture capital",
+        "best brand strategy studio for b2b tech startups"
+      ],
+      "business_keywords": [
+        "brand positioning",
+        "product design studio",
+        "digital experience design"
+      ],
+      "current_title": "Northstar Studio — Home",
+      "recommended_title": "Startup Brand Strategy & Design | Northstar Studio",
+      "title_reason": "Places target high-intent commercial keywords upfront while preserving brand recognition under 60 characters.",
+      "current_meta_description": "We are an independent design studio building digital brands.",
+      "recommended_meta_description": "Clarify your positioning and launch investor-ready digital experiences. Northstar Studio delivers agile brand sprints and UI design for ambitious software teams.",
+      "business_summary": "Northstar Studio delivers agile brand strategy and digital product design for tech startups.",
+      "supporting_content": [
+        "Case Study: Positioning a Fintech Scaleup for Series A",
+        "The Founder's Playbook for Brand Differentiation in Crowded SaaS Markets",
+        "Interactive Brand Readiness Checklist for Early-Stage Startups"
+      ],
+      "technical_findings": [
+        {
+          "name": "Title tag",
+          "value": "Northstar Studio — Home",
+          "status": "potential_issue",
+          "note": "Title is present but uses generic 'Home' suffix rather than capability-focused keywords."
+        },
+        {
+          "name": "Meta description",
+          "value": "We are an independent design studio building digital brands.",
+          "status": "potential_issue",
+          "note": "Meta description is present but under 65 characters; recommended length is 120–155 characters."
+        },
+        {
+          "name": "H1 heading",
+          "value": "Design That Commands Attention and Clarifies Purpose",
+          "status": "present",
+          "note": "Valid single H1 structure detected."
+        },
+        {
+          "name": "Canonical link tag",
+          "value": "https://northstarstudio.example",
+          "status": "present",
+          "note": "Canonical URL correctly specifies preferred index target."
+        },
+        {
+          "name": "OpenGraph image",
+          "value": "https://northstarstudio.example/og-preview.png",
+          "status": "present",
+          "note": "Social preview card assets configured for rich sharing."
+        }
+      ],
+      "search_volume_note": "No verified search-volume data available; recommendations are strategy-led."
+    },
+    "top_services": [
+      {
+        "name": "Foundational Brand Strategy",
+        "description": "Collaborative sprint defining company positioning, value proposition, and competitor differentiation.",
+        "target_industry": "B2B SaaS & Tech Startups",
+        "target_customer": "Seed to Series A Founders",
+        "benefit": "Unlocks crystal-clear market messaging and prepares teams for fundraising.",
+        "evidence": "extracted",
+        "source": "https://northstarstudio.example/services"
+      },
+      {
+        "name": "Visual Identity Systems",
+        "description": "Comprehensive design systems covering typography, color palettes, iconography, and multi-platform guidelines.",
+        "target_industry": "Digital Software & Fintech",
+        "target_customer": "Product & Marketing Leads",
+        "benefit": "Establishes a cohesive, premium brand aesthetic across every customer touchpoint.",
+        "evidence": "extracted",
+        "source": "https://northstarstudio.example/services"
+      },
+      {
+        "name": "Product UI/UX & Web Experiences",
+        "description": "Turnkey responsive web applications, design systems, and conversion-optimized marketing frontends.",
+        "target_industry": "Developer Platforms & Cloud Tools",
+        "target_customer": "VP of Engineering & Founders",
+        "benefit": "Higher user onboarding conversion and reduced front-end design debt.",
+        "evidence": "extracted",
+        "source": "https://northstarstudio.example/services"
+      }
+    ],
+    "target_audience": {
+      "primary_audience": "Early-stage tech founders and founding teams preparing for market launch or funding.",
+      "secondary_audience": [
+        "In-house Growth & Marketing Directors",
+        "Venture Capital Platform Partners advising portfolio companies",
+        "Product Managers at expanding scaleups"
+      ],
+      "industry_segments": [
+        "B2B SaaS & Developer Platforms",
+        "Fintech & Regulated Technologies",
+        "AI Platforms & Modern Infrastructure"
+      ],
+      "business_types": [
+        "Pre-Seed & Seed Tech Startups",
+        "Series A Growth Scaleups",
+        "Founder-led Digital Agencies"
+      ],
+      "profiles": [
+        {
+          "name": "The Technical Founder",
+          "business_type": "Developer Tools SaaS (Seed stage)",
+          "needs": [
+            "Translate complex technical features into intuitive customer value",
+            "Establish credible visual polish to win enterprise pilot agreements"
+          ],
+          "challenges": [
+            "Engineering-heavy team lacking dedicated brand design expertise",
+            "Fast-approaching launch deadline"
+          ],
+          "services": [
+            "Foundational Brand Strategy",
+            "Product UI/UX & Web Experiences"
+          ],
+          "opportunity": "Position with high-velocity 3-week design sprints requiring minimal executive overhead.",
+          "evidence": "inferred"
+        },
+        {
+          "name": "The Growth-Focused CEO",
+          "business_type": "Fintech Scaleup (Series A)",
+          "needs": [
+            "Reposition company from startup to established market contender",
+            "Improve landing page trial signup and enterprise demo request rates"
+          ],
+          "challenges": [
+            "Existing brand looks outdated and no longer reflects product maturity",
+            "Previous agency delivered static PDFs without developer-ready components"
+          ],
+          "services": [
+            "Visual Identity Systems",
+            "Product UI/UX & Web Experiences"
+          ],
+          "opportunity": "Deliver component-driven Figma design tokens ready for direct React front-end deployment.",
+          "evidence": "inferred"
+        }
+      ],
+      "geographic_focus": [
+        "North America",
+        "United Kingdom & Europe",
+        "Global Remote"
+      ],
+      "needs": [
+        "High-velocity project execution",
+        "Direct communication with senior design practitioners",
+        "Differentiated market positioning"
+      ],
+      "challenges": [
+        "Excessive agency overhead and inflated billable hours",
+        "Inconsistent visual design across touchpoints"
+      ],
+      "interests": [
+        "SaaS Product Growth",
+        "Venture Capital Fundraising",
+        "Design Systems & Front-End Engineering"
+      ],
+      "marketing_segments": [
+        "Venture-backed Tech Founders",
+        "Product Management Executives",
+        "Startup Accelerator Cohorts"
+      ]
+    }
+  },
+  "metadata": {
+    "report_id": "rpt-sample-northstar-verified",
+    "analyzed_at": "2026-11-24T12:00:00Z",
+    "page_title": "Northstar Studio — Home",
+    "canonical_url": "https://northstarstudio.example",
+    "extraction_warnings": [],
+    "sample_data": false,
+    "model": "gemini (gemini-2.5-flash)",
+    "cost_breakdown": {
+      "provider": "gemini",
+      "model": "gemini-2.5-flash",
+      "input_tokens": 3420,
+      "output_tokens": 1180,
+      "total_tokens": 4600,
+      "input_cost_usd": 0.000513,
+      "output_cost_usd": 0.000708,
+      "total_estimated_cost_usd": 0.001221,
+      "pricing_source": "https://ai.google.dev/gemini-api/docs/pricing",
+      "pricing_verification_date": "November 2026"
+    }
+  }
+}
