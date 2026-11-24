@@ -36,8 +36,8 @@ export function AnalyzePage() {
   // Safe query param retrieval
   let initialUrl = "https://www.hubspot.com";
   try {
-    const search: any = useSearch({ strict: false });
-    if (search?.url) initialUrl = search.url;
+    const search = useSearch({ strict: false }) as Record<string, unknown>;
+    if (typeof search?.["url"] === "string") initialUrl = search["url"];
   } catch {
     // default
   }
@@ -48,7 +48,9 @@ export function AnalyzePage() {
   const [currentStep, setCurrentStep] = useState<number>(0);
   const [telemetryLogs, setTelemetryLogs] = useState<string[]>([]);
   const [analysisError, setAnalysisError] = useState<string | null>(null);
-  const [activeResilienceTab, setActiveResilienceTab] = useState<"blocked" | "timeout" | "ssrf">("blocked");
+  const [activeResilienceTab, setActiveResilienceTab] = useState<"blocked" | "timeout" | "ssrf">(
+    "blocked",
+  );
   const [connectionTested, setConnectionTested] = useState<boolean | null>(null);
 
   const presets = [
@@ -141,17 +143,17 @@ export function AnalyzePage() {
           params: { id: result.metadata.report_id },
         });
       }, 1000);
-    } catch (err: any) {
+    } catch (err: unknown) {
       clearTimeout(t1);
       clearTimeout(t2);
       clearTimeout(t3);
       setIsAnalyzing(false);
-      const msg = err?.message || "Failed to analyze target website. Please check your network and API keys.";
+      const msg =
+        err instanceof Error
+          ? err.message
+          : "Failed to analyze target website. Please check your network and API keys.";
       setAnalysisError(msg);
-      setTelemetryLogs((prev) => [
-        ...prev,
-        `[ERROR] Execution halted: ${msg}`,
-      ]);
+      setTelemetryLogs((prev) => [...prev, `[ERROR] Execution halted: ${msg}`]);
     }
   };
 
@@ -171,7 +173,8 @@ export function AnalyzePage() {
               Start with a website.
             </h1>
             <p className="text-sm sm:text-base text-[#454655] max-w-2xl mt-1 leading-relaxed">
-              Enter a public business website. LinkIntel will inspect accessible content and produce five structured dimensions of business intelligence.
+              Enter a public business website. LinkIntel will inspect accessible content and produce
+              five structured dimensions of business intelligence.
             </p>
           </div>
           <div className="flex items-center gap-2 self-start md:self-auto bg-[#F1F3FF] px-3.5 py-2 rounded-xl border border-[#DFE0FF] shadow-2xs">
@@ -269,7 +272,8 @@ export function AnalyzePage() {
             <div className="flex items-center gap-1.5 text-xs text-[#454655]">
               <Lock size={13} className="text-[#757687]" />
               <span>
-                Public website content is fetched securely server-side. No authentication cookies or private credentials used.
+                Public website content is fetched securely server-side. No authentication cookies or
+                private credentials used.
               </span>
             </div>
 
@@ -319,12 +323,18 @@ export function AnalyzePage() {
               </div>
               <h3 className="font-bold text-sm text-[#141B2C]">Competitor Intel</h3>
               <p className="text-xs text-[#454655] line-clamp-3 leading-relaxed">
-                Market landscape mapping identifying 3-5 verified direct rivals, feature overlap, differentiation, and moat defense gaps.
+                Market landscape mapping identifying 3-5 verified direct rivals, feature overlap,
+                differentiation, and moat defense gaps.
               </p>
             </div>
             <div className="pt-3 border-t border-[#F1F3FF] flex items-center justify-between text-[11px]">
-              <span className="px-2 py-0.5 rounded bg-[#F1F3FF] text-[#454655] font-medium">3-5 Rivals</span>
-              <ArrowRight size={13} className="text-[#757687] group-hover:text-[#2538D0] transition-colors" />
+              <span className="px-2 py-0.5 rounded bg-[#F1F3FF] text-[#454655] font-medium">
+                3-5 Rivals
+              </span>
+              <ArrowRight
+                size={13}
+                className="text-[#757687] group-hover:text-[#2538D0] transition-colors"
+              />
             </div>
           </div>
 
@@ -337,12 +347,18 @@ export function AnalyzePage() {
               </div>
               <h3 className="font-bold text-sm text-[#141B2C]">Search Queries</h3>
               <p className="text-xs text-[#454655] line-clamp-3 leading-relaxed">
-                Exactly 5 cross-platform targeted discovery queries formulated for Google, LinkedIn, X, Meta, and Instagram intent loops.
+                Exactly 5 cross-platform targeted discovery queries formulated for Google, LinkedIn,
+                X, Meta, and Instagram intent loops.
               </p>
             </div>
             <div className="pt-3 border-t border-[#F1F3FF] flex items-center justify-between text-[11px]">
-              <span className="px-2 py-0.5 rounded bg-[#F1F3FF] text-[#454655] font-medium">5 Channels</span>
-              <ArrowRight size={13} className="text-[#757687] group-hover:text-[#2538D0] transition-colors" />
+              <span className="px-2 py-0.5 rounded bg-[#F1F3FF] text-[#454655] font-medium">
+                5 Channels
+              </span>
+              <ArrowRight
+                size={13}
+                className="text-[#757687] group-hover:text-[#2538D0] transition-colors"
+              />
             </div>
           </div>
 
@@ -355,12 +371,18 @@ export function AnalyzePage() {
               </div>
               <h3 className="font-bold text-sm text-[#141B2C]">SEO Optimization</h3>
               <p className="text-xs text-[#454655] line-clamp-3 leading-relaxed">
-                Precise side-by-side title/meta before/after diffs with strict SERP length limits and organic keyword intent alignment.
+                Precise side-by-side title/meta before/after diffs with strict SERP length limits
+                and organic keyword intent alignment.
               </p>
             </div>
             <div className="pt-3 border-t border-[#F1F3FF] flex items-center justify-between text-[11px]">
-              <span className="px-2 py-0.5 rounded bg-[#F1F3FF] text-[#454655] font-medium">Diff Audit</span>
-              <ArrowRight size={13} className="text-[#757687] group-hover:text-[#2538D0] transition-colors" />
+              <span className="px-2 py-0.5 rounded bg-[#F1F3FF] text-[#454655] font-medium">
+                Diff Audit
+              </span>
+              <ArrowRight
+                size={13}
+                className="text-[#757687] group-hover:text-[#2538D0] transition-colors"
+              />
             </div>
           </div>
 
@@ -373,12 +395,18 @@ export function AnalyzePage() {
               </div>
               <h3 className="font-bold text-sm text-[#141B2C]">Catalog Items</h3>
               <p className="text-xs text-[#454655] line-clamp-3 leading-relaxed">
-                Up to 5 discrete commercial offerings parsed with customer-centric value propositions and monetization structures.
+                Up to 5 discrete commercial offerings parsed with customer-centric value
+                propositions and monetization structures.
               </p>
             </div>
             <div className="pt-3 border-t border-[#F1F3FF] flex items-center justify-between text-[11px]">
-              <span className="px-2 py-0.5 rounded bg-[#F1F3FF] text-[#454655] font-medium">Max 5 SKUs</span>
-              <ArrowRight size={13} className="text-[#757687] group-hover:text-[#2538D0] transition-colors" />
+              <span className="px-2 py-0.5 rounded bg-[#F1F3FF] text-[#454655] font-medium">
+                Max 5 SKUs
+              </span>
+              <ArrowRight
+                size={13}
+                className="text-[#757687] group-hover:text-[#2538D0] transition-colors"
+              />
             </div>
           </div>
 
@@ -391,12 +419,18 @@ export function AnalyzePage() {
               </div>
               <h3 className="font-bold text-sm text-[#141B2C]">Buyer Personas</h3>
               <p className="text-xs text-[#454655] line-clamp-3 leading-relaxed">
-                Primary and secondary buyer segmentation featuring explicit organizational pain points, job titles, and buying triggers.
+                Primary and secondary buyer segmentation featuring explicit organizational pain
+                points, job titles, and buying triggers.
               </p>
             </div>
             <div className="pt-3 border-t border-[#F1F3FF] flex items-center justify-between text-[11px]">
-              <span className="px-2 py-0.5 rounded bg-[#F1F3FF] text-[#454655] font-medium">ICP Matrix</span>
-              <ArrowRight size={13} className="text-[#757687] group-hover:text-[#2538D0] transition-colors" />
+              <span className="px-2 py-0.5 rounded bg-[#F1F3FF] text-[#454655] font-medium">
+                ICP Matrix
+              </span>
+              <ArrowRight
+                size={13}
+                className="text-[#757687] group-hover:text-[#2538D0] transition-colors"
+              />
             </div>
           </div>
         </div>
@@ -590,7 +624,8 @@ export function AnalyzePage() {
                   </span>
                 </div>
                 <span className="text-xs font-mono font-bold text-[#005A4A] flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#005A4A] animate-pulse" /> Live Stream
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#005A4A] animate-pulse" /> Live
+                  Stream
                 </span>
               </div>
 
@@ -602,8 +637,8 @@ export function AnalyzePage() {
                       log.includes("ERROR")
                         ? "text-[#FFDAD6]"
                         : log.includes("Gemini") || log.includes("Ingestion complete")
-                        ? "text-[#83F7D9] font-bold"
-                        : "text-[#C5C5D8]"
+                          ? "text-[#83F7D9] font-bold"
+                          : "text-[#C5C5D8]"
                     }
                   >
                     {log}
@@ -644,7 +679,8 @@ export function AnalyzePage() {
             API Edge-Cases &amp; Deterministic Handling
           </h2>
           <p className="text-xs sm:text-sm text-[#454655] max-w-3xl mt-0.5">
-            Every potential failure mode is trapped gracefully by the backend runtime. Evaluators can review how the system handles strict network boundaries and edge constraints:
+            Every potential failure mode is trapped gracefully by the backend runtime. Evaluators
+            can review how the system handles strict network boundaries and edge constraints:
           </p>
         </div>
 
@@ -701,16 +737,26 @@ export function AnalyzePage() {
                 </span>
               </div>
               <p className="text-xs text-[#454655] leading-relaxed">
-                The target website rejected automated crawler requests via an upstream Web Application Firewall (WAF) challenge. LinkIntel honors robots.txt and prevents aggressive credential stuffing.
+                The target website rejected automated crawler requests via an upstream Web
+                Application Firewall (WAF) challenge. LinkIntel honors robots.txt and prevents
+                aggressive credential stuffing.
               </p>
               <div className="mt-2 p-3.5 rounded-lg bg-white flex flex-col gap-1 border border-[#DFE0FF]">
                 <span className="text-[10px] font-bold uppercase text-[#757687]">
                   Evaluator Remediation Guidance
                 </span>
                 <ul className="text-xs text-[#141B2C] list-disc list-inside space-y-1">
-                  <li>Verify the domain has a publicly accessible homepage without intranets or IP whitelisting.</li>
-                  <li>Try analyzing an internal blog post or product URL directly instead of apex root.</li>
-                  <li>In demo mode, system loads verified sample reports for offline presentations.</li>
+                  <li>
+                    Verify the domain has a publicly accessible homepage without intranets or IP
+                    whitelisting.
+                  </li>
+                  <li>
+                    Try analyzing an internal blog post or product URL directly instead of apex
+                    root.
+                  </li>
+                  <li>
+                    In demo mode, system loads verified sample reports for offline presentations.
+                  </li>
                 </ul>
               </div>
             </div>
@@ -733,7 +779,9 @@ export function AnalyzePage() {
                 </span>
               </div>
               <p className="text-xs text-[#454655] leading-relaxed">
-                The upstream LLM provider did not finish streaming token completion within the 25-second resilience budget. The backend automatically severed the socket to prevent orphaned serverless workloads.
+                The upstream LLM provider did not finish streaming token completion within the
+                25-second resilience budget. The backend automatically severed the socket to prevent
+                orphaned serverless workloads.
               </p>
               <div className="mt-2 p-3.5 rounded-lg bg-white flex flex-col gap-1 border border-[#DFE0FF]">
                 <span className="text-[10px] font-bold uppercase text-[#757687]">
@@ -742,7 +790,10 @@ export function AnalyzePage() {
                 <ul className="text-xs text-[#141B2C] list-disc list-inside space-y-1">
                   <li>Automatic retry logic triggers clean connection re-establishment.</li>
                   <li>Check your Google Gemini API key configuration in backend/.env.</li>
-                  <li>Use the Model Lab to compare response latency across alternative model providers.</li>
+                  <li>
+                    Use the Model Lab to compare response latency across alternative model
+                    providers.
+                  </li>
                 </ul>
               </div>
             </div>
@@ -765,7 +816,9 @@ export function AnalyzePage() {
                 </span>
               </div>
               <p className="text-xs text-[#454655] leading-relaxed">
-                The provided target resolved to a private local subnet (`127.0.0.1`, `10.0.0.0/8`, or AWS metadata endpoint `169.254.169.254`). Internal SSRF requests are strictly rejected at ingress.
+                The provided target resolved to a private local subnet (`127.0.0.1`, `10.0.0.0/8`,
+                or AWS metadata endpoint `169.254.169.254`). Internal SSRF requests are strictly
+                rejected at ingress.
               </p>
               <div className="mt-2 p-3.5 rounded-lg bg-white flex flex-col gap-1 border border-[#DFE0FF]">
                 <span className="text-[10px] font-bold uppercase text-[#757687]">
@@ -774,7 +827,10 @@ export function AnalyzePage() {
                 <ul className="text-xs text-[#141B2C] list-disc list-inside space-y-1">
                   <li>Target must resolve to a globally routable public DNS A/AAAA record.</li>
                   <li>Raw IP addresses without canonical hostnames are strictly disallowed.</li>
-                  <li>Ensure the URL protocol is explicitly specified with <code className="font-mono bg-[#F1F3FF] px-1 py-0.5 rounded">https://</code>.</li>
+                  <li>
+                    Ensure the URL protocol is explicitly specified with{" "}
+                    <code className="font-mono bg-[#F1F3FF] px-1 py-0.5 rounded">https://</code>.
+                  </li>
                 </ul>
               </div>
             </div>

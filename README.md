@@ -6,7 +6,7 @@
 [![TypeScript](https://img.shields.io/badge/Language-TypeScript_5.8-3178C6.svg?logo=typescript&logoColor=white)](https://www.typescriptlang.org)
 [![Vite](https://img.shields.io/badge/Bundler-Vite_8-646CFF.svg?logo=vite&logoColor=white)](https://vitejs.dev)
 [![Tailwind CSS v4](https://img.shields.io/badge/Styling-Tailwind_v4-38B2AC.svg?logo=tailwind-css&logoColor=white)](https://tailwindcss.com)
-[![Tests](https://img.shields.io/badge/Tests-83_Passed_(66_Pytest_+_17_Vitest)-brightgreen.svg)](<>)
+[![Tests](<https://img.shields.io/badge/Tests-88_Passed_(71_Pytest_+_17_Vitest)-brightgreen.svg>)](<>)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 > **LinkIntel AI** is an AI-powered website intelligence platform that ingests public business websites and transforms live web content into structured competitive intelligence, high-intent search queries, technical SEO audits, core service breakdowns, and buyer persona profiles.
@@ -43,6 +43,7 @@ Developed for the **Dxora Technologies Python Practical Test**, this repository 
 ## 1. Project Overview
 
 LinkIntel AI addresses the challenge of rapidly understanding and auditing business websites. When a user submits a public domain URL, the application:
+
 - Validates the target URL through a 6-layer SSRF defense pipeline.
 - Safely extracts semantic text, headings, OpenGraph tags, and technical SEO signals via a custom pinned-IP HTTP transport.
 - Dispatches live competitor discovery queries via search provider adapters (DuckDuckGo, Brave, Tavily) without hardcoded company lists.
@@ -119,6 +120,7 @@ flowchart TD
 ## 4. Installation & Execution Instructions
 
 ### Prerequisites
+
 - Python 3.10 or higher installed on host machine.
 - Node.js 20+ and npm / pnpm installed.
 - (Optional) A Google AI Studio Gemini API Key for live AI generation (deterministic mock mode runs offline without API keys).
@@ -155,6 +157,7 @@ CACHE_TTL_SECONDS=3600
 ```
 
 Verify your environment without exposing secrets:
+
 ```bash
 python backend/app/config.py
 ```
@@ -170,6 +173,7 @@ python -m uvicorn app.main:app --host 0.0.0.0 --port 4000 --reload
 ```
 
 The backend is live at `http://127.0.0.1:4000`. Test reachability:
+
 ```bash
 curl http://127.0.0.1:4000/health
 # {"status":"ok"}
@@ -195,7 +199,7 @@ Open your browser at `http://localhost:8080`.
 - **Method:** `POST`
 - **Headers:**
   - `Content-Type: application/json`
-  - `X-Workspace-Id: default` *(optional multi-tenant scoping header)*
+  - `X-Workspace-Id: default` _(optional multi-tenant scoping header)_
 - **Status Codes:**
   - `200 OK`: Successful 5-section intelligence analysis.
   - `400 Bad Request`: Invalid URL format, localhost, or SSRF security violation.
@@ -341,7 +345,10 @@ File reference: [`docs/evidence/sample-request.json`](docs/evidence/sample-reque
         }
       ],
       "geographic_focus": ["North America", "Europe", "Global Remote"],
-      "needs": ["High-velocity project execution", "Direct communication with design practitioners"],
+      "needs": [
+        "High-velocity project execution",
+        "Direct communication with design practitioners"
+      ],
       "challenges": ["Excessive agency overhead and inflated billable hours"],
       "interests": ["SaaS Product Growth", "Design Systems"],
       "marketing_segments": ["Venture-backed Tech Founders"]
@@ -389,27 +396,29 @@ Full file reference: [`docs/evidence/sample-response.json`](docs/evidence/sample
 
 _Official provider pricing verified as of 24 November 2026._
 
-| Metric / Dimension | Google Gemini 2.5 Flash *(Primary)* | OpenAI GPT-4o mini *(Fallback)* | Anthropic Claude 3.5 Haiku *(Standby)* |
-|---|---|---|---|
-| **Input Price (per 1M tokens)** | **\$0.150** | **\$0.150** | \$0.800 |
-| **Output Price (per 1M tokens)** | **\$0.600** | **\$0.600** | \$4.000 |
-| **Context Window** | **1,048,576 tokens** | 128,000 tokens | 200,000 tokens |
-| **Max Output Tokens** | 8,192 tokens | **16,384 tokens** | 8,192 tokens |
-| **Structured Output Mode** | Native Pydantic `response_schema` | JSON Schema `response_format` | Tool Calling Schema |
-| **Estimated Cost per Analysis** *(3.5k in / 1.2k out)* | **\$0.001245** (~0.12¢) | **\$0.001245** (~0.12¢) | **\$0.007600** (~0.76¢) |
-| **Cost per 1,000 Analyses** | **\$1.25** | **\$1.25** | **\$7.60** |
-| **Monthly Cost at 10,000 scans/day** | **\$373.50 / month** | **\$373.50 / month** | \$2,280.00 / month |
+| Metric / Dimension                                     | Google Gemini 2.5 Flash _(Primary)_ | OpenAI GPT-4o mini _(Fallback)_ | Anthropic Claude 3.5 Haiku _(Standby)_ |
+| ------------------------------------------------------ | ----------------------------------- | ------------------------------- | -------------------------------------- |
+| **Input Price (per 1M tokens)**                        | **\$0.150**                         | **\$0.150**                     | \$0.800                                |
+| **Output Price (per 1M tokens)**                       | **\$0.600**                         | **\$0.600**                     | \$4.000                                |
+| **Context Window**                                     | **1,048,576 tokens**                | 128,000 tokens                  | 200,000 tokens                         |
+| **Max Output Tokens**                                  | 8,192 tokens                        | **16,384 tokens**               | 8,192 tokens                           |
+| **Structured Output Mode**                             | Native Pydantic `response_schema`   | JSON Schema `response_format`   | Tool Calling Schema                    |
+| **Estimated Cost per Analysis** _(3.5k in / 1.2k out)_ | **\$0.001245** (~0.12¢)             | **\$0.001245** (~0.12¢)         | **\$0.007600** (~0.76¢)                |
+| **Cost per 1,000 Analyses**                            | **\$1.25**                          | **\$1.25**                      | **\$7.60**                             |
+| **Monthly Cost at 10,000 scans/day**                   | **\$373.50 / month**                | **\$373.50 / month**            | \$2,280.00 / month                     |
 
 ---
 
 ## 13. Final Recommended Model & Engineering Rationale
 
 ### Primary Recommendation: **Google Gemini 2.5 Flash**
+
 1. **Pydantic Schema Binding:** The `google-genai` Python SDK natively accepts Pydantic v2 classes (`response_schema=LLMAnalysisPayload`), ensuring that responses deserialize directly into the application contract without regex patching.
 2. **1M Context Capacity:** Enables submitting full-length webpage text, navigation structures, and technical SEO signals without aggressive truncation.
 3. **Leading Price-to-Performance:** At \$0.15 / \$0.60 per 1M tokens, 1,000 comprehensive audits cost approximately **\$1.25**, delivering high operating margins.
 
 ### Secondary Fallback: **OpenAI GPT-4o mini**
+
 Integrated as an active fallback adapter in `backend/app/providers/openai.py`. If Gemini quotas are exhausted, switching `LLM_PROVIDER=openai` maintains identical token pricing and strict JSON compliance.
 
 Full whitepaper: [`backend/docs/llm-research.md`](backend/docs/llm-research.md)
@@ -428,13 +437,19 @@ Full whitepaper: [`backend/docs/llm-research.md`](backend/docs/llm-research.md)
 ## 15. Test Execution Commands
 
 ```bash
-# 1. Run all Backend Pytest Tests (66 tests):
+# 1. Run all Backend Pytest Tests (71 tests):
 python -m pytest backend/tests -v
 
 # 2. Run Frontend Vitest Tests (17 tests):
 npm test
 
-# 3. Run Production Frontend Build:
+# 3. Type Checking:
+npx tsc --noEmit
+
+# 4. Lint Verification:
+npm run lint
+
+# 5. Production SSR Build:
 npm run build
 ```
 
@@ -442,12 +457,14 @@ npm run build
 
 ## 16. Actual Verified Test Results
 
-| Test Suite | Total Tests | Passed | Failed | Execution Time |
-|---|---|---|---|---|
-| **Backend Pytest** (`backend/tests/`) | **66** | **66** | 0 | 23.93s |
-| **Frontend Vitest** (`src/test/`) | **17** | **17** | 0 | 5.47s |
-| **Production Build** (`npm run build`) | **Client, SSR & Nitro** | **Compiled cleanly (0 errors)** | 0 | 2.66s |
-| **Total Automated Tests** | **83** | **83** | **0** | **100% Pass Rate** |
+| Test Suite                             | Total Tests             | Passed                          | Failed | Execution Time     |
+| -------------------------------------- | ----------------------- | ------------------------------- | ------ | ------------------ |
+| **Backend Pytest** (`backend/tests/`)  | **71**                  | **71**                          | 0      | 22.65s             |
+| **Frontend Vitest** (`src/test/`)      | **17**                  | **17**                          | 0      | 3.44s              |
+| **TypeScript Validation** (`tsc`)      | **Clean**               | **0 errors**                    | 0      | 3.5s               |
+| **ESLint** (`eslint .`)                | **Clean**               | **0 errors**                    | 0      | 4.2s               |
+| **Production Build** (`npm run build`) | **Client, SSR & Nitro** | **Compiled cleanly (0 errors)** | 0      | 2.85s              |
+| **Total Automated Tests**              | **88**                  | **88**                          | **0**  | **100% Pass Rate** |
 
 ---
 
@@ -477,23 +494,33 @@ All visual evidence is stored in [`docs/evidence/`](docs/evidence/README.md):
 ## 18. Interactive API Documentation (`/docs`)
 
 FastAPI provides automatic interactive Swagger UI documentation at:
+
 ```
 http://127.0.0.1:4000/docs
 ```
+
 And ReDoc at:
+
 ```
 http://127.0.0.1:4000/redoc
 ```
 
 ---
 
-## 19. Deployment Instructions
+## 19. Deployment Instructions (Render Blueprint)
 
-- **Containerized:** Run `docker-compose up -d` or use `backend/Dockerfile`.
-- **Cloud PaaS (Render / Railway):** Set root directory to `backend`, runtime Python 3, build command `pip install -r requirements.txt`, start command `uvicorn app.main:app --host 0.0.0.0 --port $PORT`.
-- **Frontend (Vercel / Cloudflare Pages):** Import repo, build command `npm run build`, output directory `.output/public`, set `VITE_API_BASE_URL` to deployed backend URL.
+The entire production stack deploys to **Render** via a single Infrastructure-as-Code Blueprint (`render.yaml`):
 
-Step-by-step dashboard guide: [`docs/deployment.md`](docs/deployment.md)
+1. **Push Branch:** Push `deployment-ready` to GitHub (`git push origin deployment-ready`).
+2. **Open Render:** Go to [dashboard.render.com](https://dashboard.render.com) and click **New +** → **Blueprint**.
+3. **Connect Repository:** Select `Mandar-code143/link-sleuth-studio` and branch `deployment-ready`.
+4. **Configure Secrets:** Enter your `GEMINI_API_KEY`, `VITE_API_BASE_URL` (public backend URL), and `FRONTEND_ORIGINS` (public frontend URL).
+5. **Apply Blueprint:** Render provisions:
+   - `linkintel-frontend` (Node.js SSR Web Service on Nitro `render-com` preset).
+   - `linkintel-api` (Python FastAPI Web Service on Uvicorn).
+   - `linkintel-db` (Render PostgreSQL managed database with automatic connection pooling).
+
+Complete step-by-step launch & cross-linking guide: [`docs/deployment.md`](docs/deployment.md)
 
 ---
 

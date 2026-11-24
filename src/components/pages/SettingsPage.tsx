@@ -48,7 +48,7 @@ export function SettingsPage() {
         if (active) setApiHealth(h);
       });
       void fetchProviderStatus(preferences.apiBaseUrl).then((p) => {
-        if (active) setProviders(p);
+        if (active && p && Array.isArray(p.providers)) setProviders(p.providers);
       });
     }
     return () => {
@@ -62,9 +62,15 @@ export function SettingsPage() {
       const h = await checkApiHealthDetailed(backendUrl);
       setApiHealth(h);
       const p = await fetchProviderStatus(backendUrl);
-      setProviders(p);
+      if (p && Array.isArray(p.providers)) setProviders(p.providers);
     } catch {
-      setApiHealth({ ok: false, status: "error", latencyMs: 0, details: null });
+      setApiHealth({
+        ok: false,
+        reachable: false,
+        status: "offline",
+        latencyMs: 0,
+        errorMessage: "Unable to reach backend",
+      });
     } finally {
       setIsPinging(false);
     }
@@ -96,7 +102,7 @@ export function SettingsPage() {
     }
   };
 
-  const isConnected = apiHealth?.ok ?? (preferences.mode === "demo");
+  const isConnected = apiHealth?.ok ?? preferences.mode === "demo";
   const latencyDisplay = apiHealth ? `${apiHealth.latencyMs}ms` : "14ms";
 
   return (
@@ -129,7 +135,8 @@ export function SettingsPage() {
           </h1>
 
           <p className="text-xs sm:text-sm text-[#454655] leading-relaxed">
-            Configure backend API connection, AI provider orchestration, application runtime mode, and inspect server-side environment readiness.
+            Configure backend API connection, AI provider orchestration, application runtime mode,
+            and inspect server-side environment readiness.
           </p>
         </div>
 
@@ -178,7 +185,8 @@ export function SettingsPage() {
                 </span>
               </div>
               <p className="text-xs text-[#454655] mt-0.5">
-                Determines whether discovery workflows trigger live headless web requests &amp; server LLM invocations or load pre-audited research fixtures.
+                Determines whether discovery workflows trigger live headless web requests &amp;
+                server LLM invocations or load pre-audited research fixtures.
               </p>
             </div>
           </div>
@@ -233,7 +241,9 @@ export function SettingsPage() {
                 </span>
               </div>
               <p className="text-xs text-[#454655] leading-relaxed">
-                Connected to active FastAPI backend (Port 4000) and live LLM endpoints. Dispatches real Playwright Chromium instances for deep web scraping, structured JSON extraction, and dynamic multi-model reasoning.
+                Connected to active FastAPI backend (Port 4000) and live LLM endpoints. Dispatches
+                real Playwright Chromium instances for deep web scraping, structured JSON
+                extraction, and dynamic multi-model reasoning.
               </p>
             </div>
             <div className="flex items-center gap-2 pt-2 border-t border-[#DFE0FF] text-[11px] font-mono text-[#757687]">
@@ -261,7 +271,9 @@ export function SettingsPage() {
                 </span>
               </div>
               <p className="text-xs text-[#454655] leading-relaxed">
-                Employs verified offline fixtures (e.g. Northstar Studio sample report) for offline evaluations, developer component testing, and presentation walkthroughs without token expenditure or network requests.
+                Employs verified offline fixtures (e.g. Northstar Studio sample report) for offline
+                evaluations, developer component testing, and presentation walkthroughs without
+                token expenditure or network requests.
               </p>
             </div>
             <div className="flex items-center gap-2 pt-2 border-t border-[#DFE0FF] text-[11px] font-mono text-[#757687]">
@@ -283,7 +295,8 @@ export function SettingsPage() {
               </h2>
             </div>
             <p className="text-xs text-[#454655] mt-0.5">
-              Verify real-time communication between UI telemetry clients and the asynchronous FastAPI intelligence engine.
+              Verify real-time communication between UI telemetry clients and the asynchronous
+              FastAPI intelligence engine.
             </p>
           </div>
 
@@ -325,7 +338,9 @@ export function SettingsPage() {
               />
             </div>
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white text-[#141B2C] font-mono text-xs border border-[#DFE0FF]">
-              <span className={`w-2 h-2 rounded-full ${isConnected ? "bg-[#005A4A]" : "bg-[#BA1A1A]"}`} />
+              <span
+                className={`w-2 h-2 rounded-full ${isConnected ? "bg-[#005A4A]" : "bg-[#BA1A1A]"}`}
+              />
               FastAPI v1.4.2 Active
             </span>
           </div>
@@ -428,7 +443,8 @@ export function SettingsPage() {
               </div>
               <div className="font-mono text-xs font-bold text-[#2538D0]">gemini-2.5-flash</div>
               <p className="text-xs text-[#454655] mt-1.5 leading-relaxed">
-                Primary model powering structured 5-section link intelligence. Read from server <code className="font-mono bg-white px-1 rounded">GEMINI_API_KEY</code>.
+                Primary model powering structured 5-section link intelligence. Read from server{" "}
+                <code className="font-mono bg-white px-1 rounded">GEMINI_API_KEY</code>.
               </p>
             </div>
             <div className="pt-2 border-t border-[#DFE0FF] text-[11px] text-[#005A4A] font-semibold">
@@ -447,7 +463,9 @@ export function SettingsPage() {
               </div>
               <div className="font-mono text-xs font-bold text-[#141B2C]">gpt-4o-mini</div>
               <p className="text-xs text-[#454655] mt-1.5 leading-relaxed">
-                Secondary engine for tri-provider benchmark suite and schema verification tests. Read from server <code className="font-mono bg-white px-1 rounded">OPENAI_API_KEY</code>.
+                Secondary engine for tri-provider benchmark suite and schema verification tests.
+                Read from server{" "}
+                <code className="font-mono bg-white px-1 rounded">OPENAI_API_KEY</code>.
               </p>
             </div>
             <div className="pt-2 border-t border-[#DFE0FF] text-[11px] text-[#757687]">
@@ -466,7 +484,9 @@ export function SettingsPage() {
               </div>
               <div className="font-mono text-xs font-bold text-[#141B2C]">claude-3-5-haiku</div>
               <p className="text-xs text-[#454655] mt-1.5 leading-relaxed">
-                Qualitative evaluation model. Configurable in <code className="font-mono bg-white px-1 rounded">ANTHROPIC_API_KEY</code> for comparative research.
+                Qualitative evaluation model. Configurable in{" "}
+                <code className="font-mono bg-white px-1 rounded">ANTHROPIC_API_KEY</code> for
+                comparative research.
               </p>
             </div>
             <div className="pt-2 border-t border-[#DFE0FF] text-[11px] text-[#757687]">
@@ -485,7 +505,11 @@ export function SettingsPage() {
               Workspace Multi-Tenancy
             </h3>
             <p className="text-xs text-[#454655] mt-1 leading-relaxed">
-              LinkIntel isolates SQLite database records and reports via the <code className="font-mono bg-[#F1F3FF] px-1 py-0.5 rounded text-[#2538D0]">X-Workspace-Id</code> header.
+              LinkIntel isolates SQLite database records and reports via the{" "}
+              <code className="font-mono bg-[#F1F3FF] px-1 py-0.5 rounded text-[#2538D0]">
+                X-Workspace-Id
+              </code>{" "}
+              header.
             </p>
 
             <div className="mt-4 flex flex-col gap-2">
@@ -538,13 +562,16 @@ export function SettingsPage() {
               Local Storage &amp; Cache
             </h3>
             <p className="text-xs text-[#454655] mt-1 leading-relaxed">
-              Browser workspace cache stores offline analysis history and quick-access report fixtures.
+              Browser workspace cache stores offline analysis history and quick-access report
+              fixtures.
             </p>
 
             <div className="mt-4 p-4 rounded-xl bg-[#F1F3FF] border border-[#DFE0FF] flex items-center justify-between">
               <div>
                 <span className="text-xs font-bold text-[#141B2C] block">Cached Reports</span>
-                <span className="text-[11px] text-[#757687]">{historyCount} reports in browser storage</span>
+                <span className="text-[11px] text-[#757687]">
+                  {historyCount} reports in browser storage
+                </span>
               </div>
               <button
                 type="button"

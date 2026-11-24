@@ -11,16 +11,16 @@
 
 All automated test suites across both the Python FastAPI backend and the React TanStack Start frontend were executed and verified. The system passes 100% of its test cases with zero regressions, zero test skips, and zero simulated mock passes on live endpoints.
 
-| Test Suite | Framework | Tests Executed | Passed | Failed | Duration |
-| :--- | :--- | :---: | :---: | :---: | :---: |
-| **Backend API & Endpoints** | Pytest 9.1.1 | 9 | 9 | 0 | 0.95s |
-| **Backend SSRF & Security** | Pytest 9.1.1 | 23 | 23 | 0 | 0.45s |
-| **Backend Configuration & Diagnostics** | Pytest 9.1.1 | 6 | 6 | 0 | 0.12s |
-| **Backend Multi-Model Lab & Benchmarks** | Pytest 9.1.1 | 6 | 6 | 0 | 1.15s |
-| **Backend Content Extraction & SEO** | Pytest 9.1.1 | 3 | 3 | 0 | 0.15s |
-| **Backend Analysis Schemas & Costing** | Pytest 9.1.1 | 4 | 4 | 0 | 0.12s |
-| **Frontend Routing & UI Shell** | Vitest 4.1.12 | 12 | 12 | 0 | 2.10s |
-| **TOTAL** | — | **63** | **63** | **0** | **4.89s** |
+| Test Suite                               | Framework     | Tests Executed | Passed | Failed | Duration  |
+| :--------------------------------------- | :------------ | :------------: | :----: | :----: | :-------: |
+| **Backend API & Endpoints**              | Pytest 9.1.1  |       9        |   9    |   0    |   0.95s   |
+| **Backend SSRF & Security**              | Pytest 9.1.1  |       23       |   23   |   0    |   0.45s   |
+| **Backend Configuration & Diagnostics**  | Pytest 9.1.1  |       6        |   6    |   0    |   0.12s   |
+| **Backend Multi-Model Lab & Benchmarks** | Pytest 9.1.1  |       6        |   6    |   0    |   1.15s   |
+| **Backend Content Extraction & SEO**     | Pytest 9.1.1  |       3        |   3    |   0    |   0.15s   |
+| **Backend Analysis Schemas & Costing**   | Pytest 9.1.1  |       4        |   4    |   0    |   0.12s   |
+| **Frontend Routing & UI Shell**          | Vitest 4.1.12 |       12       |   12   |   0    |   2.10s   |
+| **TOTAL**                                | —             |     **63**     | **63** | **0**  | **4.89s** |
 
 ---
 
@@ -149,13 +149,13 @@ npm run build
 
 ## 5. Security & SSRF Protection Matrix
 
-| Threat Vector | Defense Mechanism | Verified in Automated Test |
-| :--- | :--- | :---: |
-| Loopback Bypass (`127.0.0.1`, `::1`) | URL normalizer + DNS socket validator | `test_reject_direct_loopback_ip`, `test_reject_localhost_hostname` |
-| RFC 1918 Private Ranges | Subnet masking (`10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`) | `test_reject_direct_private_rfc1918_ip` |
-| Cloud Metadata (`169.254.169.254`) | Link-local and metadata hostname rejection | `test_reject_cloud_metadata_ip`, `test_blocks_cloud_metadata_hostname` |
-| DNS Rebinding (TOCTOU Attack) | Connection-level pinning via `PinnedAsyncHTTPTransport` | `test_pinned_network_backend_connects_to_pinned_ip` |
-| Open Redirect to Internal Target | Hop-by-hop redirect validation before follow | `test_redirect_to_localhost_is_blocked` |
-| Redirect Loop / Denial-of-Service | Strict 3-hop max redirect limit + set visited tracking | `test_redirect_loop_is_detected` |
-| HTTP Request Flooding (DDoS) | Sliding-window 60 req/min/IP rate limiter with proxy support | `test_rate_limiter_blocks_excessive_requests`, `test_rate_limiter_uses_x_forwarded_for` |
-| Decompression Bomb / Heavy Payload | 5MB hard byte limit with early streaming termination | Streaming chunk size verification |
+| Threat Vector                        | Defense Mechanism                                                |                               Verified in Automated Test                                |
+| :----------------------------------- | :--------------------------------------------------------------- | :-------------------------------------------------------------------------------------: |
+| Loopback Bypass (`127.0.0.1`, `::1`) | URL normalizer + DNS socket validator                            |           `test_reject_direct_loopback_ip`, `test_reject_localhost_hostname`            |
+| RFC 1918 Private Ranges              | Subnet masking (`10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`) |                         `test_reject_direct_private_rfc1918_ip`                         |
+| Cloud Metadata (`169.254.169.254`)   | Link-local and metadata hostname rejection                       |         `test_reject_cloud_metadata_ip`, `test_blocks_cloud_metadata_hostname`          |
+| DNS Rebinding (TOCTOU Attack)        | Connection-level pinning via `PinnedAsyncHTTPTransport`          |                   `test_pinned_network_backend_connects_to_pinned_ip`                   |
+| Open Redirect to Internal Target     | Hop-by-hop redirect validation before follow                     |                         `test_redirect_to_localhost_is_blocked`                         |
+| Redirect Loop / Denial-of-Service    | Strict 3-hop max redirect limit + set visited tracking           |                            `test_redirect_loop_is_detected`                             |
+| HTTP Request Flooding (DDoS)         | Sliding-window 60 req/min/IP rate limiter with proxy support     | `test_rate_limiter_blocks_excessive_requests`, `test_rate_limiter_uses_x_forwarded_for` |
+| Decompression Bomb / Heavy Payload   | 5MB hard byte limit with early streaming termination             |                            Streaming chunk size verification                            |

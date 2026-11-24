@@ -4,30 +4,31 @@
 **Assignment Reference:** [Dxora Technologies Practical Test — Link Analysis](https://github.com/chivoxai/practical-test/blob/main/link-analysis.md)  
 **Submission Deadline:** 27 November 2026  
 **Audit Date:** 24 November 2026  
-**Auditor:** Principal Software Architect, Senior Python Engineer & Technical Evaluator  
+**Auditor:** Principal Software Architect, Senior Python Engineer & Technical Evaluator
 
 ---
 
 ## 1. Compliance Summary Table
 
-| Requirement / Component | Assigned Marks | Implementation Status | Evidence / Location |
-|---|---|---|---|
-| **1. Web Extraction & SSRF Security** | 20 Marks | **Complete and verified** | `backend/app/security/`, `backend/app/services/website_extractor.py`, 25 security tests passing |
-| **2. Competitor Analysis (Section 1)** | 15 Marks | **Complete and verified** | `backend/app/services/competitor_service.py`, `analysis_service.py`, 7 competitor tests passing |
-| **3. 5-Platform Search Queries (Section 2)** | 10 Marks | **Complete and verified** | `backend/app/services/analysis_service.py`, `test_analysis.py`, 100% 5-platform coverage |
-| **4. Technical SEO Improvements (Section 3)** | 10 Marks | **Complete and verified** | `backend/app/services/seo_service.py`, DOM signal checks (title, meta, H1, OG, canonical, robots) |
-| **5. Top Services & Audience (Sections 4 & 5)** | 10 Marks | **Complete and verified** | `backend/app/services/analysis_service.py`, up to 5 real services, structured persona profiles |
-| **6. LLM Research & Comparison** | 15 Marks | **Complete and verified** | `backend/docs/llm-research.md`, official published rates (Gemini, OpenAI, Anthropic), cost models |
-| **7. Multi-Model Benchmark Service** | 10 Marks | **Complete and verified** | `backend/app/services/benchmark_service.py`, `/benchmark/run`, neutral scoring formula |
-| **8. API & Database Architecture** | 10 Marks | **Complete and verified** | FastAPI `POST /link-analysis`, SQLite / SQLAlchemy persistence, workspace isolation |
-| **9. Production React Frontend** | Bonus / UI | **Complete and verified** | React 19, Google Stitch design tokens, 6 responsive pages, 17 vitest tests passing |
-| **10. Live Cloud Deployment** | Submission | **Requires applicant action** | `backend/Dockerfile`, `docker-compose.yml`, `docs/deployment.md` prepared; requires user hosting accounts |
+| Requirement / Component                         | Assigned Marks | Implementation Status         | Evidence / Location                                                                                       |
+| ----------------------------------------------- | -------------- | ----------------------------- | --------------------------------------------------------------------------------------------------------- |
+| **1. Web Extraction & SSRF Security**           | 20 Marks       | **Complete and verified**     | `backend/app/security/`, `backend/app/services/website_extractor.py`, 25 security tests passing           |
+| **2. Competitor Analysis (Section 1)**          | 15 Marks       | **Complete and verified**     | `backend/app/services/competitor_service.py`, `analysis_service.py`, 7 competitor tests passing           |
+| **3. 5-Platform Search Queries (Section 2)**    | 10 Marks       | **Complete and verified**     | `backend/app/services/analysis_service.py`, `test_analysis.py`, 100% 5-platform coverage                  |
+| **4. Technical SEO Improvements (Section 3)**   | 10 Marks       | **Complete and verified**     | `backend/app/services/seo_service.py`, DOM signal checks (title, meta, H1, OG, canonical, robots)         |
+| **5. Top Services & Audience (Sections 4 & 5)** | 10 Marks       | **Complete and verified**     | `backend/app/services/analysis_service.py`, up to 5 real services, structured persona profiles            |
+| **6. LLM Research & Comparison**                | 15 Marks       | **Complete and verified**     | `backend/docs/llm-research.md`, official published rates (Gemini, OpenAI, Anthropic), cost models         |
+| **7. Multi-Model Benchmark Service**            | 10 Marks       | **Complete and verified**     | `backend/app/services/benchmark_service.py`, `/benchmark/run`, neutral scoring formula                    |
+| **8. API & Database Architecture**              | 10 Marks       | **Complete and verified**     | FastAPI `POST /link-analysis`, SQLite / SQLAlchemy persistence, workspace isolation                       |
+| **9. Production React Frontend**                | Bonus / UI     | **Complete and verified**     | React 19, Google Stitch design tokens, 6 responsive pages, 17 vitest tests passing                        |
+| **10. Live Cloud Deployment**                   | Submission     | **Requires applicant action** | `backend/Dockerfile`, `docker-compose.yml`, `docs/deployment.md` prepared; requires user hosting accounts |
 
 ---
 
 ## 2. Requirement-by-Requirement Forensic Audit
 
 ### Section 1: Competitor vs Submitted Brand Comparison
+
 - **Assignment Expectation:** Ingest website content and provide realistic competitor landscape, comparing at least 3 competitors with strengths, weaknesses, positioning, opportunities, and attributable evidence.
 - **Status:** **Complete and verified**
 - **Verification Details:**
@@ -41,6 +42,7 @@
 ---
 
 ### Section 2: Top Five Target Search Queries with 5-Platform Coverage
+
 - **Assignment Expectation:** Generate exactly 5 target search queries covering Google, LinkedIn, X, Instagram, and Facebook, with intent, commercial relevance, and audience.
 - **Status:** **Complete and verified**
 - **Verification Details:**
@@ -52,6 +54,7 @@
 ---
 
 ### Section 3: SEO Improvements & Technical Signals
+
 - **Assignment Expectation:** Provide primary, secondary, long-tail, and business keywords, recommended title (<60 chars) and meta description (<160 chars) with rationale, and factual technical SEO findings.
 - **Status:** **Complete and verified**
 - **Verification Details:**
@@ -63,6 +66,7 @@
 ---
 
 ### Section 4: Up to Five Top Services
+
 - **Assignment Expectation:** Extract up to 5 real services/products offered by the company. If fewer than 5 are offered, report only what is present without inventing fake offerings.
 - **Status:** **Complete and verified**
 - **Verification Details:**
@@ -73,6 +77,7 @@
 ---
 
 ### Section 5: Target Audience Profiles & Personas
+
 - **Assignment Expectation:** Define primary and secondary audiences, industry segments, business types, geographic focus, needs, challenges, and customer personas.
 - **Status:** **Complete and verified**
 - **Verification Details:**
@@ -82,6 +87,7 @@
 ---
 
 ### Section 6: LLM Comparison & Cost Optimization Research (15 Marks)
+
 - **Assignment Expectation:** Compare at least 3 models based on accuracy, speed, pricing, context length, JSON support, recommendation, and cost optimization techniques.
 - **Status:** **Complete and verified**
 - **Verification Details:**
@@ -96,6 +102,7 @@
 ---
 
 ### Section 7: Multi-Model Benchmark Service (`/benchmark/run`)
+
 - **Assignment Expectation:** Benchmark runner comparing models on latency, cost, and schema compliance.
 - **Status:** **Complete and verified**
 - **Verification Details:**
@@ -109,6 +116,7 @@
 ---
 
 ### Section 8: SSRF Security, DNS Pinning & Isolation
+
 - **Assignment Expectation:** Secure outbound HTTP requests, private IP blocking, DNS rebinding mitigation, rate limiting, and workspace scoping.
 - **Status:** **Complete and verified**
 - **Verification Details:**
@@ -124,6 +132,7 @@
 ---
 
 ### Section 9: Automated Test Suites
+
 - **Status:** **Complete and verified**
 - **Backend Tests:** **66 / 66 passed** (`python -m pytest backend/tests` in 23.93s).
 - **Frontend Tests:** **17 / 17 passed** (`npm test` in 5.47s).
@@ -132,6 +141,7 @@
 ---
 
 ### Section 10: Live Cloud Deployment
+
 - **Status:** **Requires applicant action**
 - **Status Explanation:**
   - All containerization artifacts (`backend/Dockerfile`, `docker-compose.yml`), reverse proxy configurations, and environment templates are verified and ready.

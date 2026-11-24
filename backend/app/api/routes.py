@@ -10,7 +10,7 @@ from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
 from ..config import settings
-from ..database import get_db, ReportRecord, BenchmarkRecord
+from ..database import get_db, ReportRecord, BenchmarkRecord, check_db_health, engine
 from ..schemas.request import LinkAnalysisRequest
 from ..schemas.response import LinkAnalysisResponse
 from ..schemas.benchmark import ProviderStatusResponse, BenchmarkRunRequest, BenchmarkRunResponse
@@ -128,13 +128,18 @@ async def readiness_check() -> dict:
     elif settings.llm_provider == "mock":
         key_present = True
 
+    db_healthy = check_db_health()
+    is_ready = key_present and db_healthy
+
     return {
-        "status": "ready" if key_present else "degraded",
+        "status": "ready" if is_ready else "degraded",
         "provider": settings.llm_provider,
         "model": settings.llm_model,
         "provider_key_present": key_present,
         "search_provider": settings.search_provider,
         "search_provider_configured": settings.is_search_configured,
+        "database_connected": db_healthy,
+        "database_dialect": engine.dialect.name,
         "app_env": settings.app_env,
     }
 
