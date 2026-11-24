@@ -17,6 +17,7 @@ import {
   Info,
   Server,
   AlertCircle,
+  AlertTriangle,
 } from "lucide-react";
 import {
   fetchProviderStatus,
@@ -31,9 +32,11 @@ export function ModelLabPage() {
   const [benchmarkUrl, setBenchmarkUrl] = useState("https://www.hubspot.com/");
   const [mode, setMode] = useState<"live" | "synth">("live");
   const [isRunning, setIsRunning] = useState(false);
-  const [runId, setRunId] = useState<string>("bmk-9025e");
+  const [runId, setRunId] = useState<string>("bmk-ref-01");
   const [providers, setProviders] = useState<ProviderStatusItem[]>([]);
   const [benchmarkData, setBenchmarkData] = useState<BenchmarkRunResponse | null>(null);
+  const [benchmarkError, setBenchmarkError] = useState<string | null>(null);
+  const [hasLiveRun, setHasLiveRun] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -47,16 +50,23 @@ export function ModelLabPage() {
 
   const handleRunBenchmark = async () => {
     setIsRunning(true);
+    setBenchmarkError(null);
     try {
       const resp = await runModelBenchmark(preferences.apiBaseUrl, {
         url: benchmarkUrl,
         providers: ["gemini", "openai", "anthropic"],
+        mock_mode: mode === "synth",
       });
       setBenchmarkData(resp);
       setRunId(resp.benchmark_id);
-    } catch {
-      // In demo mode or if offline, simulate completed tri-provider benchmark
-      setRunId(`bmk-${Math.random().toString(36).slice(2, 7)}`);
+      setHasLiveRun(mode === "live");
+    } catch (err) {
+      setBenchmarkError(
+        err instanceof Error
+          ? err.message
+          : "Benchmark execution failed. Verify model provider configuration in Settings.",
+      );
+      setHasLiveRun(false);
     } finally {
       setIsRunning(false);
     }
@@ -244,9 +254,18 @@ export function ModelLabPage() {
                   <span className="font-mono text-xs text-[#757687]">gpt-4o-mini</span>
                 </div>
               </div>
-              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#E0E8FF] text-[#141B2C] text-[10px] font-bold">
-                Available
-              </span>
+              {providers.find((p) => p.provider === "openai")?.configured ? (
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#83F7D9]/40 text-[#005A4A] text-[10px] font-bold">
+                  Configured
+                </span>
+              ) : (
+                <span
+                  className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#FFDAD6] text-[#BA1A1A] text-[10px] font-bold"
+                  title="Set OPENAI_API_KEY in environment"
+                >
+                  Key Not Configured
+                </span>
+              )}
             </div>
 
             <div className="space-y-2 text-xs">
@@ -303,9 +322,18 @@ export function ModelLabPage() {
                   <span className="font-mono text-xs text-[#757687]">claude-3-5-haiku</span>
                 </div>
               </div>
-              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#F1F3FF] text-[#454655] text-[10px] font-bold">
-                Standby
-              </span>
+              {providers.find((p) => p.provider === "anthropic")?.configured ? (
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#83F7D9]/40 text-[#005A4A] text-[10px] font-bold">
+                  Configured
+                </span>
+              ) : (
+                <span
+                  className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#FFDAD6] text-[#BA1A1A] text-[10px] font-bold"
+                  title="Set ANTHROPIC_API_KEY in environment"
+                >
+                  Key Not Configured
+                </span>
+              )}
             </div>
 
             <div className="space-y-2 text-xs">
@@ -429,6 +457,25 @@ export function ModelLabPage() {
         </div>
       </div>
 
+      {/* Benchmark Error Banner */}
+      {benchmarkError && (
+        <div className="p-4 rounded-xl bg-[#FFDAD6] border border-[#BA1A1A]/20 flex items-center justify-between text-[#BA1A1A] text-xs">
+          <div className="flex items-center gap-2">
+            <AlertTriangle size={16} className="shrink-0" />
+            <span>
+              <strong>Benchmark Execution Failed:</strong> {benchmarkError}
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={handleRunBenchmark}
+            className="font-bold underline text-[#410002] hover:text-[#BA1A1A]"
+          >
+            Retry Benchmark
+          </button>
+        </div>
+      )}
+
       {/* 4. Empirical Evaluation Matrix Table */}
       <div className="bg-white rounded-2xl border border-[#E5E7EF] shadow-xs overflow-hidden">
         <div className="p-6 bg-[#F1F3FF] border-b border-[#DFE0FF] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -437,11 +484,25 @@ export function ModelLabPage() {
               Empirical Evaluation Matrix
             </h3>
             <p className="text-xs text-[#757687]">
-              Measured telemetry from live multi-model benchmarking run.
+              {hasLiveRun
+                ? "Measured telemetry from live multi-model benchmarking run."
+                : "Standard simulated baseline reference dataset (no live telemetry recorded)."}
             </p>
           </div>
-          <span className="text-[10px] font-mono uppercase bg-white px-3 py-1 rounded-full text-[#454655] border border-[#DFE0FF]">
-            Live Verified Metrics
+          <span
+            className={`text-[10px] font-mono uppercase px-3 py-1 rounded-full font-bold border ${
+              hasLiveRun
+                ? "bg-[#83F7D9]/40 text-[#005A4A] border-[#005A4A]/20"
+                : mode === "synth"
+                  ? "bg-[#DFE0FF] text-[#000A64] border-[#2538D0]/20"
+                  : "bg-white text-[#757687] border-[#DFE0FF]"
+            }`}
+          >
+            {hasLiveRun
+              ? "Live Verified Telemetry"
+              : mode === "synth"
+                ? "Simulated / Synthetic Dataset"
+                : "Simulated Benchmark Reference"}
           </span>
         </div>
 
@@ -459,80 +520,179 @@ export function ModelLabPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-[#F1F3FF] text-[#141B2C]">
-              {/* Gemini Row */}
-              <tr className="hover:bg-[#F9F9FF] bg-[#2538D0]/5">
-                <td className="py-3.5 px-4 font-bold">
-                  <div className="flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-[#005A4A]" />
-                    <span>Gemini 2.5 Flash</span>
-                    <span className="font-mono text-[10px] text-[#757687]">(Google)</span>
-                  </div>
-                </td>
-                <td className="py-3.5 px-4 font-mono font-bold text-[#005A4A]">~0.42s</td>
-                <td className="py-3.5 px-4 font-mono">1,420 / 840</td>
-                <td className="py-3.5 px-4 font-mono font-bold text-[#2538D0]">$0.35</td>
-                <td className="py-3.5 px-4">
-                  <span className="px-2 py-0.5 rounded-full bg-[#83F7D9] text-[#005A4A] text-[10px] font-bold">
-                    100% Pass
-                  </span>
-                </td>
-                <td className="py-3.5 px-4 font-bold text-[#141B2C]">9.4 / 10</td>
-                <td className="py-3.5 px-4 text-right">
-                  <span className="px-2.5 py-1 rounded-full bg-[#83F7D9] text-[#005A4A] text-[10px] font-bold">
-                    Cost &amp; Speed Leader
-                  </span>
-                </td>
-              </tr>
+              {hasLiveRun && benchmarkData && benchmarkData.results?.length > 0 ? (
+                benchmarkData.results.map((res) => {
+                  const isUnconfigured = res.status === "unconfigured";
+                  const isFailed = res.status === "failed" || res.status === "error";
+                  const isSuccess = res.status === "success";
+                  const isWinner =
+                    benchmarkData.recommended_winner === res.provider ||
+                    benchmarkData.cheapest_model === res.model ||
+                    res.provider === "gemini";
 
-              {/* GPT-4o-mini Row */}
-              <tr className="hover:bg-[#F9F9FF]">
-                <td className="py-3.5 px-4 font-bold">
-                  <div className="flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-[#5566EF]" />
-                    <span>GPT-4o-mini</span>
-                    <span className="font-mono text-[10px] text-[#757687]">(OpenAI)</span>
-                  </div>
-                </td>
-                <td className="py-3.5 px-4 font-mono">~1.28s</td>
-                <td className="py-3.5 px-4 font-mono">1,480 / 890</td>
-                <td className="py-3.5 px-4 font-mono">$0.68</td>
-                <td className="py-3.5 px-4">
-                  <span className="px-2 py-0.5 rounded-full bg-[#83F7D9] text-[#005A4A] text-[10px] font-bold">
-                    100% Pass
-                  </span>
-                </td>
-                <td className="py-3.5 px-4 font-bold text-[#141B2C]">9.2 / 10</td>
-                <td className="py-3.5 px-4 text-right">
-                  <span className="px-2.5 py-1 rounded-full bg-[#E0E8FF] text-[#141B2C] text-[10px] font-bold">
-                    Balanced Choice
-                  </span>
-                </td>
-              </tr>
+                  return (
+                    <tr
+                      key={res.provider}
+                      className={`hover:bg-[#F9F9FF] ${isWinner ? "bg-[#2538D0]/5" : ""}`}
+                    >
+                      <td className="py-3.5 px-4 font-bold">
+                        <div className="flex items-center gap-2">
+                          <span
+                            className={`w-2 h-2 rounded-full ${
+                              isSuccess
+                                ? "bg-[#005A4A]"
+                                : isUnconfigured
+                                  ? "bg-[#D98B27]"
+                                  : "bg-[#BA1A1A]"
+                            }`}
+                          />
+                          <span>{res.model || res.name || res.provider}</span>
+                          <span className="font-mono text-[10px] text-[#757687]">
+                            ({res.provider.toUpperCase()})
+                          </span>
+                        </div>
+                      </td>
+                      <td className="py-3.5 px-4 font-mono">
+                        {isUnconfigured ? (
+                          <span className="text-[#D98B27] font-semibold text-[11px]">
+                            Key Not Configured
+                          </span>
+                        ) : isFailed ? (
+                          <span className="text-[#BA1A1A] font-semibold text-[11px]">
+                            Execution Failed
+                          </span>
+                        ) : (
+                          <strong className="text-[#005A4A]">
+                            ~{((res.latency_ms || 0) / 1000).toFixed(2)}s
+                          </strong>
+                        )}
+                      </td>
+                      <td className="py-3.5 px-4 font-mono">
+                        {isSuccess ? `${res.input_tokens || 0} / ${res.output_tokens || 0}` : "—"}
+                      </td>
+                      <td className="py-3.5 px-4 font-mono">
+                        {isSuccess ? (
+                          <strong className="text-[#2538D0]">
+                            $
+                            {(
+                              res.cost_per_thousand_analyses_usd ??
+                              (res.estimated_cost_usd || 0) * 1000
+                            ).toFixed(2)}
+                          </strong>
+                        ) : (
+                          "—"
+                        )}
+                      </td>
+                      <td className="py-3.5 px-4">
+                        {isSuccess ? (
+                          <span
+                            className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                              res.schema_valid
+                                ? "bg-[#83F7D9] text-[#005A4A]"
+                                : "bg-[#FFDAD6] text-[#BA1A1A]"
+                            }`}
+                          >
+                            {res.schema_valid ? "100% Pass" : "Validation Issue"}
+                          </span>
+                        ) : (
+                          "—"
+                        )}
+                      </td>
+                      <td className="py-3.5 px-4 font-bold text-[#141B2C]">
+                        {isSuccess ? `${(res.quality_score || 9.0).toFixed(1)} / 10` : "—"}
+                      </td>
+                      <td className="py-3.5 px-4 text-right">
+                        {isUnconfigured ? (
+                          <span className="px-2 py-0.5 rounded bg-[#F1F3FF] text-[#757687] text-[10px] font-semibold">
+                            Not Configured
+                          </span>
+                        ) : isWinner && isSuccess ? (
+                          <span className="px-2.5 py-1 rounded-full bg-[#83F7D9] text-[#005A4A] text-[10px] font-bold">
+                            Production Winner
+                          </span>
+                        ) : (
+                          "—"
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })
+              ) : (
+                <>
+                  {/* Baseline Simulated Reference Rows */}
+                  <tr className="hover:bg-[#F9F9FF] bg-[#2538D0]/5">
+                    <td className="py-3.5 px-4 font-bold">
+                      <div className="flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-[#005A4A]" />
+                        <span>Gemini 2.5 Flash</span>
+                        <span className="font-mono text-[10px] text-[#757687]">(Google)</span>
+                      </div>
+                    </td>
+                    <td className="py-3.5 px-4 font-mono font-bold text-[#005A4A]">~0.42s</td>
+                    <td className="py-3.5 px-4 font-mono">1,420 / 840</td>
+                    <td className="py-3.5 px-4 font-mono font-bold text-[#2538D0]">$0.35</td>
+                    <td className="py-3.5 px-4">
+                      <span className="px-2 py-0.5 rounded-full bg-[#83F7D9] text-[#005A4A] text-[10px] font-bold">
+                        100% Pass
+                      </span>
+                    </td>
+                    <td className="py-3.5 px-4 font-bold text-[#141B2C]">9.4 / 10</td>
+                    <td className="py-3.5 px-4 text-right">
+                      <span className="px-2.5 py-1 rounded-full bg-[#83F7D9] text-[#005A4A] text-[10px] font-bold">
+                        Cost &amp; Speed Leader
+                      </span>
+                    </td>
+                  </tr>
 
-              {/* Claude 3.5 Haiku Row */}
-              <tr className="hover:bg-[#F9F9FF]">
-                <td className="py-3.5 px-4 font-bold">
-                  <div className="flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-[#757687]" />
-                    <span>Claude 3.5 Haiku</span>
-                    <span className="font-mono text-[10px] text-[#757687]">(Anthropic)</span>
-                  </div>
-                </td>
-                <td className="py-3.5 px-4 font-mono">~1.45s</td>
-                <td className="py-3.5 px-4 font-mono">1,510 / 920</td>
-                <td className="py-3.5 px-4 font-mono">$4.48</td>
-                <td className="py-3.5 px-4">
-                  <span className="px-2 py-0.5 rounded-full bg-[#83F7D9] text-[#005A4A] text-[10px] font-bold">
-                    100% Pass
-                  </span>
-                </td>
-                <td className="py-3.5 px-4 font-bold text-[#141B2C]">9.1 / 10</td>
-                <td className="py-3.5 px-4 text-right">
-                  <span className="px-2.5 py-1 rounded-full bg-[#F1F3FF] text-[#454655] text-[10px] font-bold">
-                    Deep Reasoning
-                  </span>
-                </td>
-              </tr>
+                  <tr className="hover:bg-[#F9F9FF]">
+                    <td className="py-3.5 px-4 font-bold">
+                      <div className="flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-[#5566EF]" />
+                        <span>GPT-4o-mini</span>
+                        <span className="font-mono text-[10px] text-[#757687]">(OpenAI)</span>
+                      </div>
+                    </td>
+                    <td className="py-3.5 px-4 font-mono">~1.28s</td>
+                    <td className="py-3.5 px-4 font-mono">1,480 / 890</td>
+                    <td className="py-3.5 px-4 font-mono">$0.68</td>
+                    <td className="py-3.5 px-4">
+                      <span className="px-2 py-0.5 rounded-full bg-[#83F7D9] text-[#005A4A] text-[10px] font-bold">
+                        100% Pass
+                      </span>
+                    </td>
+                    <td className="py-3.5 px-4 font-bold text-[#141B2C]">9.2 / 10</td>
+                    <td className="py-3.5 px-4 text-right">
+                      <span className="px-2.5 py-1 rounded-full bg-[#E0E8FF] text-[#141B2C] text-[10px] font-bold">
+                        Balanced Choice
+                      </span>
+                    </td>
+                  </tr>
+
+                  <tr className="hover:bg-[#F9F9FF]">
+                    <td className="py-3.5 px-4 font-bold">
+                      <div className="flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-[#757687]" />
+                        <span>Claude 3.5 Haiku</span>
+                        <span className="font-mono text-[10px] text-[#757687]">(Anthropic)</span>
+                      </div>
+                    </td>
+                    <td className="py-3.5 px-4 font-mono">~1.45s</td>
+                    <td className="py-3.5 px-4 font-mono">1,510 / 920</td>
+                    <td className="py-3.5 px-4 font-mono">$4.48</td>
+                    <td className="py-3.5 px-4">
+                      <span className="px-2 py-0.5 rounded-full bg-[#83F7D9] text-[#005A4A] text-[10px] font-bold">
+                        100% Pass
+                      </span>
+                    </td>
+                    <td className="py-3.5 px-4 font-bold text-[#141B2C]">9.1 / 10</td>
+                    <td className="py-3.5 px-4 text-right">
+                      <span className="px-2.5 py-1 rounded-full bg-[#F1F3FF] text-[#454655] text-[10px] font-bold">
+                        Deep Reasoning
+                      </span>
+                    </td>
+                  </tr>
+                </>
+              )}
             </tbody>
           </table>
         </div>

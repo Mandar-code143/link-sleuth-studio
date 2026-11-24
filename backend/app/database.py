@@ -39,9 +39,18 @@ def normalize_db_url(url: str) -> str:
 
 engine_url = normalize_db_url(settings.database_url)
 
+def verify_production_database() -> None:
+    """Fails startup if running in production with ephemeral SQLite."""
+    if settings.app_env.lower() in ("production", "prod") and engine_url.startswith("sqlite"):
+        raise RuntimeError(
+            "CRITICAL CONFIGURATION ERROR: Ephemeral SQLite is strictly prohibited in production. "
+            "Render web services do not persist disk state across deploys. "
+            "A persistent PostgreSQL database must be configured via DATABASE_URL."
+        )
+
 # Production verification: log prominent alert if SQLite is configured in production
 if settings.app_env.lower() in ("production", "prod") and engine_url.startswith("sqlite"):
-    logger.warning(
+    logger.error(
         "CRITICAL PERSISTENCE ALERT: Backend is running in production with an ephemeral SQLite database! "
         "Render instances do not persist disk state across deploys or container restarts. "
         "Configure DATABASE_URL to point to Render PostgreSQL (e.g. postgresql://user:pass@host/db)."
@@ -51,13 +60,14 @@ if engine_url.startswith("sqlite"):
     connect_args = {"check_same_thread": False}
     engine = create_engine(engine_url, connect_args=connect_args)
 else:
-    # Hardened PostgreSQL connection pool for Render
+    # Hardened PostgreSQL connection pool sized safely for Render free evaluation tier
     engine = create_engine(
         engine_url,
         pool_pre_ping=True,  # Proactively test connections before checkout to avoid idle timeout drops
         pool_recycle=300,   # Recycle connections every 5 minutes to prevent stale sockets on Render
-        pool_size=10,       # Base connection pool size
-        max_overflow=20,    # Max burst connections under load
+        pool_size=5,        # Base connection pool size conservative for Render free evaluation tier
+        max_overflow=5,     # Conservative burst headroom within database limits
+        pool_timeout=30,    # Max wait time for connection checkout
     )
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
@@ -99,26 +109,26 @@ class ReportRecord(Base):
         }
 
     def get_full_report(self) -> dict:
-        """Parses and returns full analysis JSON."""
+        """Deserializes and returns the complete AnalysisResponse JSON payload."""
         return json.loads(self.report_json)
 
 
 class BenchmarkRecord(Base):
-    """Persistent storage for multi-model benchmark evaluation runs."""
+    """Persistent storage for multi-model benchmark evaluation results."""
 
     __tablename__ = "benchmark_runs"
 
-    id = Column(String(64), primary_key=True, index=True, default=lambda: f"bmk_{uuid.uuid4().hex[:12]}")
+    id = Column(String(64), primary_key=True, index=True)
     workspace_id = Column(String(64), index=True, nullable=False, default="default")
     target_url = Column(String(2048), nullable=False)
-    benchmark_mode = Column(String(64), default="comprehensive", nullable=False)
+    benchmark_mode = Column(String(32), nullable=False, default="live")
     is_simulated = Column(Boolean, default=False, nullable=False)
     winner_model = Column(String(64), nullable=True, default="")
     results_json = Column(Text, nullable=False)  # Full BenchmarkRunResponse serialized
     created_at = Column(DateTime, default=datetime.utcnow, index=True, nullable=False)
 
     def to_dict(self) -> dict:
-        """Converts record to API-ready dictionary summary."""
+        """Converts benchmark record to summary dictionary."""
         return {
             "id": self.id,
             "workspace_id": self.workspace_id,
@@ -130,12 +140,13 @@ class BenchmarkRecord(Base):
         }
 
     def get_full_results(self) -> dict:
-        """Parses and returns full benchmark JSON."""
+        """Deserializes and returns complete BenchmarkRunResponse JSON payload."""
         return json.loads(self.results_json)
 
 
 def init_db() -> None:
     """Creates database tables if they do not exist."""
+    verify_production_database()
     try:
         Base.metadata.create_all(bind=engine)
         logger.info(f"Database schema initialized successfully with engine dialect '{engine.dialect.name}'.")
@@ -147,6 +158,9 @@ def init_db() -> None:
 
 def check_db_health() -> bool:
     """Executes a lightweight query to verify active database connectivity."""
+    if settings.app_env.lower() in ("production", "prod") and engine.dialect.name == "sqlite":
+        logger.warning("Database health check rejected: production environment cannot use SQLite.")
+        return False
     try:
         with engine.connect() as conn:
             conn.execute(text("SELECT 1"))

@@ -15,27 +15,96 @@ import {
   CheckCircle2,
   Clock,
   Layers,
+  AlertCircle,
+  AlertTriangle,
+  Loader2,
 } from "lucide-react";
-import { readHistory, deleteReport, type HistoryEntry } from "@/lib/linkintel";
+import {
+  readHistory,
+  deleteReport,
+  fetchReportsList,
+  deleteReportById,
+  readPreferences,
+  getActiveWorkspace,
+  type HistoryEntry,
+  type SavedReportSummary,
+} from "@/lib/linkintel";
 
 export function HistoryPage() {
   const navigate = useNavigate();
   const [history, setHistory] = useState<HistoryEntry[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [isLiveMode, setIsLiveMode] = useState(false);
+  const [activeWorkspace, setActiveWorkspace] = useState("default");
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [modeFilter, setModeFilter] = useState("all");
   const [sortOrder, setSortOrder] = useState<"newest" | "oldest" | "az">("newest");
 
+  const loadHistory = () => {
+    const prefs = readPreferences();
+    const ws = getActiveWorkspace();
+    setActiveWorkspace(ws);
+    const live = prefs.mode !== "demo";
+    setIsLiveMode(live);
+    setErrorMsg(null);
+
+    if (!live) {
+      setLoading(false);
+      setHistory(readHistory());
+      return;
+    }
+
+    setLoading(true);
+    fetchReportsList(prefs.apiBaseUrl, { workspaceId: ws })
+      .then((resp) => {
+        const rawItems: SavedReportSummary[] = Array.isArray(resp?.items) ? resp.items : [];
+        const mapped: HistoryEntry[] = rawItems.map((r: SavedReportSummary) => ({
+          id: r.id,
+          website: r.url || "",
+          brand:
+            r.brand_name ||
+            (r.url ? r.url.replace(/^https?:\/\//, "").split("/")[0] : "Target Brand"),
+          category: r.category || "Technology",
+          analyzedAt: r.created_at || new Date().toISOString(),
+          modelUsed: r.model_used || "gemini-2.5-flash",
+          status: "completed",
+          sample: r.is_sample || false,
+        }));
+        setHistory(mapped);
+      })
+      .catch((err: Error) => {
+        setErrorMsg(err.message || "Failed to load reports from backend database.");
+        // Fallback to local session cache
+        setHistory(readHistory());
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  };
+
   useEffect(() => {
-    setHistory(readHistory());
+    loadHistory();
   }, []);
 
-  const handleDelete = (id: string, e: React.MouseEvent) => {
+  const handleDelete = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (confirm("Are you sure you want to remove this intelligence report?")) {
-      deleteReport(id);
-      setHistory(readHistory());
+    if (!confirm("Are you sure you want to remove this intelligence report?")) {
+      return;
     }
+    // Delete from browser cache
+    deleteReport(id);
+
+    const prefs = readPreferences();
+    if (prefs.mode !== "demo") {
+      try {
+        await deleteReportById(prefs.apiBaseUrl, id, getActiveWorkspace());
+      } catch (err) {
+        console.warn("Failed to delete report from backend:", err);
+      }
+    }
+    loadHistory();
   };
 
   const handleExportAll = () => {
@@ -93,7 +162,17 @@ export function HistoryPage() {
           <div className="flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-[#2538D0]" />
             <span className="text-[11px] font-bold uppercase tracking-wider text-[#2538D0]">
-              AUDIT REPOSITORY • PERSONAL WORKSPACE
+              AUDIT REPOSITORY • WORKSPACE: {activeWorkspace.toUpperCase()}
+            </span>
+            <span
+              className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
+                isLiveMode ? "bg-[#83F7D9]/40 text-[#005A4A]" : "bg-[#DFE0FF] text-[#000A64]"
+              }`}
+            >
+              <span
+                className={`w-1.5 h-1.5 rounded-full ${isLiveMode ? "bg-[#005A4A]" : "bg-[#2538D0]"}`}
+              />
+              {isLiveMode ? "Backend PostgreSQL Persistence" : "Browser Storage (Demo Mode)"}
             </span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold font-['Manrope',sans-serif] text-[#141B2C]">
@@ -124,6 +203,25 @@ export function HistoryPage() {
           </Link>
         </div>
       </div>
+
+      {/* Error alert if backend fetch failed */}
+      {errorMsg && (
+        <div className="p-4 rounded-xl bg-[#FFDAD6] border border-[#BA1A1A]/20 flex items-center justify-between text-[#BA1A1A] text-xs">
+          <div className="flex items-center gap-2">
+            <AlertTriangle size={16} className="shrink-0" />
+            <span>
+              <strong>Persistence Notice:</strong> {errorMsg} (Displaying cached session data)
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={loadHistory}
+            className="font-bold underline text-[#410002] hover:text-[#BA1A1A]"
+          >
+            Retry Sync
+          </button>
+        </div>
+      )}
 
       {/* Search, Filter & Sort Toolbar */}
       <div className="bg-white rounded-2xl p-4 sm:p-5 border border-[#E5E7EF] shadow-xs flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">

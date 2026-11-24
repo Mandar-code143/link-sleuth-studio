@@ -1,6 +1,6 @@
 # LinkIntel AI — Master Render Blueprint Specification
 # Provisions a complete 3-tier architecture:
-#   1. linkintel-frontend (Node.js SSR web service using TanStack Start & Nitro render-com preset)
+#   1. linkintel-frontend (Node.js SSR web service using TanStack Start & Nitro render_com preset)
 #   2. linkintel-api (Python FastAPI web service with Uvicorn, hardened SSRF protection & LLM integration)
 #   3. linkintel-db (Render PostgreSQL managed database with connection pooling)
 
@@ -13,14 +13,16 @@ services:
     runtime: node
     plan: free
     region: oregon
-    buildCommand: npm install && npm run build
-    startCommand: npm run start
+    buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm run build
+    startCommand: node .output/server/index.mjs
     healthCheckPath: /
     envVars:
       - key: NODE_VERSION
-        value: 20
+        value: 24
       - key: NITRO_PRESET
-        value: render-com
+        value: render_com
+      - key: NITRO_HOST
+        value: 0.0.0.0
       - key: HOST
         value: 0.0.0.0
       - key: VITE_API_BASE_URL
