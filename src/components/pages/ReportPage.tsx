@@ -1,6 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useParams, Link, useNavigate } from "@tanstack/react-router";
 import {
+  AlertCircle,
+  AlertTriangle,
   ShieldCheck,
   ExternalLink,
   Copy,
@@ -30,6 +32,7 @@ import {
 } from "lucide-react";
 import {
   DEMO_REPORT,
+  saveReport,
   getReport,
   fetchReportById,
   readPreferences,
@@ -44,6 +47,9 @@ export function ReportPage() {
   const navigate = useNavigate();
 
   const [report, setReport] = useState<LinkAnalysis | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [notFound, setNotFound] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<
     "competitors" | "queries" | "seo" | "services" | "audience"
   >("competitors");
@@ -52,33 +58,139 @@ export function ReportPage() {
   const [copiedQueryIndex, setCopiedQueryIndex] = useState<number | null>(null);
   const [exportMenuOpen, setExportMenuOpen] = useState(false);
 
-  useEffect(() => {
+  const loadReport = useCallback(() => {
+    setLoading(true);
+    setErrorMsg(null);
+    setNotFound(false);
+
     // 1. Try local storage
     const local = getReport(reportId);
     if (local) {
       setReport(local);
+      setLoading(false);
       return;
     }
 
-    // 2. Try fetching from backend database if live
+    // 2. Demo fallback strictly for designated sample identifier
+    if (reportId === "sample-northstar-01" || reportId === DEMO_REPORT.metadata.report_id) {
+      setReport(DEMO_REPORT);
+      setLoading(false);
+      return;
+    }
+
     const prefs = readPreferences();
-    if (prefs.mode !== "demo") {
-      void fetchReportById(reportId, prefs.apiBaseUrl).then((fetched) => {
+    if (prefs.mode === "demo") {
+      // In demo mode without local storage match, report does not exist
+      setNotFound(true);
+      setLoading(false);
+      return;
+    }
+
+    // 3. Live backend retrieval: corrected call signature fetchReportById(apiBaseUrl, reportId)
+    fetchReportById(prefs.apiBaseUrl, reportId)
+      .then((fetched) => {
         if (fetched) {
+          saveReport(fetched);
           setReport(fetched);
         } else {
-          setReport(DEMO_REPORT);
+          setNotFound(true);
         }
+      })
+      .catch((err: Error) => {
+        const msg = err.message || "";
+        if (msg.includes("404") || msg.toLowerCase().includes("not found")) {
+          setNotFound(true);
+        } else {
+          setErrorMsg(msg || "Failed to retrieve report from backend database.");
+        }
+      })
+      .finally(() => {
+        setLoading(false);
       });
-    } else {
-      setReport(DEMO_REPORT);
-    }
   }, [reportId]);
 
-  if (!report) {
+  useEffect(() => {
+    loadReport();
+  }, [loadReport]);
+
+  if (loading) {
     return (
-      <div className="flex min-h-[500px] items-center justify-center">
+      <div className="flex flex-col min-h-[500px] items-center justify-center gap-3">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#2538D0]" />
+        <p className="text-xs text-[#757687] font-mono">
+          Retrieving intelligence report from database...
+        </p>
+      </div>
+    );
+  }
+
+  if (notFound) {
+    return (
+      <div className="flex flex-col w-full max-w-[800px] mx-auto px-4 py-16 items-center text-center animate-fadeIn">
+        <div className="w-16 h-16 rounded-2xl bg-[#F1F3FF] text-[#2538D0] flex items-center justify-center mb-6 shadow-xs">
+          <AlertCircle size={32} />
+        </div>
+        <span className="text-[11px] font-bold uppercase tracking-wider text-[#757687] mb-2">
+          HTTP 404 • Artifact Not Found
+        </span>
+        <h1 className="text-2xl sm:text-3xl font-extrabold font-['Manrope',sans-serif] text-[#141B2C] mb-3">
+          Intelligence report does not exist
+        </h1>
+        <p className="text-xs sm:text-sm text-[#454655] max-w-md mb-8 leading-relaxed">
+          The requested report{" "}
+          <code className="px-2 py-0.5 bg-[#F1F3FF] rounded text-[#2538D0] font-mono text-xs">
+            {reportId}
+          </code>{" "}
+          was not found in your active workspace repository or local session.
+        </p>
+        <div className="flex items-center gap-3 flex-wrap justify-center">
+          <Link
+            to="/history"
+            className="px-5 py-2.5 rounded-xl bg-[#F1F3FF] hover:bg-[#E9EDFF] text-[#141B2C] text-xs font-semibold border border-[#DFE0FF] transition-colors"
+          >
+            Open Intelligence Archive
+          </Link>
+          <Link
+            to="/analyze"
+            className="px-5 py-2.5 rounded-xl bg-[#2538D0] hover:bg-[#1E31C0] text-white text-xs font-semibold shadow-xs transition-all"
+          >
+            Analyze Website
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  if (errorMsg || !report) {
+    return (
+      <div className="flex flex-col w-full max-w-[800px] mx-auto px-4 py-16 items-center text-center animate-fadeIn">
+        <div className="w-16 h-16 rounded-2xl bg-[#FFDAD6] text-[#BA1A1A] flex items-center justify-center mb-6 shadow-xs">
+          <AlertTriangle size={32} />
+        </div>
+        <span className="text-[11px] font-bold uppercase tracking-wider text-[#BA1A1A] mb-2">
+          Backend Persistence Error
+        </span>
+        <h1 className="text-2xl sm:text-3xl font-extrabold font-['Manrope',sans-serif] text-[#141B2C] mb-3">
+          Failed to load report from server
+        </h1>
+        <p className="text-xs sm:text-sm text-[#454655] max-w-md mb-8 leading-relaxed">
+          {errorMsg || "An unexpected error occurred while communicating with the persistence API."}
+        </p>
+        <div className="flex items-center gap-3 flex-wrap justify-center">
+          <button
+            type="button"
+            onClick={loadReport}
+            className="px-5 py-2.5 rounded-xl bg-[#2538D0] hover:bg-[#1E31C0] text-white text-xs font-semibold shadow-xs transition-all"
+          >
+            Retry Retrieval
+          </button>
+          <Link
+            to="/settings"
+            className="px-5 py-2.5 rounded-xl bg-[#F1F3FF] hover:bg-[#E9EDFF] text-[#141B2C] text-xs font-semibold border border-[#DFE0FF] transition-colors"
+          >
+            Verify API Base URL
+          </Link>
+        </div>
       </div>
     );
   }

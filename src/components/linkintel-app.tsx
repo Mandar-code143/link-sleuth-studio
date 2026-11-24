@@ -144,7 +144,10 @@ function usePreferences() {
 
 function BrandMark({ small = false }: { small?: boolean }) {
   return (
-    <span className={`brand-mark${small ? " brand-mark-small" : ""} overflow-hidden shrink-0`} aria-hidden="true">
+    <span
+      className={`brand-mark${small ? " brand-mark-small" : ""} overflow-hidden shrink-0`}
+      aria-hidden="true"
+    >
       <img
         src="/logo.png"
         alt="LinkIntel AI"

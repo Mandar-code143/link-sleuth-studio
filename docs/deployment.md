@@ -23,7 +23,7 @@ flowchart TD
 
 | Resource Name | Render Resource Type | Runtime / Engine | Build Command | Start Command | Health Check |
 |---|---|---|---|---|---|
-| **`linkintel-frontend`** | Web Service | Node.js 20 (Nitro SSR) | `npm install && npm run build` | `npm run start` (`node .output/server/index.mjs`) | `/` |
+| **`linkintel-frontend`** | Web Service | Node.js 24 (Nitro SSR) | `corepack enable && pnpm install --frozen-lockfile && pnpm run build` | `node .output/server/index.mjs` | `/` |
 | **`linkintel-api`** | Web Service | Python 3.10+ (FastAPI) | `pip install --upgrade pip && pip install -r requirements.txt` | `uvicorn app.main:app --host 0.0.0.0 --port $PORT` | `/health` |
 | **`linkintel-db`** | PostgreSQL Database | PostgreSQL 16 (Managed) | N/A (Managed by Render) | N/A | Automated connection pre-ping (`SELECT 1`) |
 
@@ -40,14 +40,16 @@ services:
     runtime: node
     plan: free
     region: oregon
-    buildCommand: npm install && npm run build
-    startCommand: npm run start
+    buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm run build
+    startCommand: node .output/server/index.mjs
     healthCheckPath: /
     envVars:
       - key: NODE_VERSION
-        value: 20
+        value: 24
       - key: NITRO_PRESET
-        value: render-com
+        value: render_com
+      - key: NITRO_HOST
+        value: 0.0.0.0
       - key: HOST
         value: 0.0.0.0
       - key: VITE_API_BASE_URL
@@ -112,8 +114,9 @@ databases:
 
 | Variable | Required? | Blueprint Source | Description |
 |---|---|---|---|
-| `NODE_VERSION` | **Yes** | Blueprint (`20`) | Pins Node.js runtime version. |
-| `NITRO_PRESET` | **Yes** | Blueprint (`render-com`) | Configures TanStack Start/Nitro for Render Node.js SSR. |
+| `NODE_VERSION` | **Yes** | Blueprint (`24`) | Pins Node.js runtime version (Node 24 LTS). |
+| `NITRO_PRESET` | **Yes** | Blueprint (`render_com`) | Configures TanStack Start/Nitro for Render Node.js SSR (`node .output/server/index.mjs`). |
+| `NITRO_HOST` | **Yes** | Blueprint (`0.0.0.0`) | Binds server to all interfaces. |
 | `HOST` | **Yes** | Blueprint (`0.0.0.0`) | Binds server to all interfaces. |
 | `PORT` | Auto | Render runtime | Port assigned by Render; Nitro automatically listens on `$PORT`. |
 | `VITE_API_BASE_URL` | **Yes** | User configured (`sync: false`) | Public URL of `linkintel-api` (e.g. `https://linkintel-api.onrender.com`). |
@@ -134,8 +137,9 @@ Render PostgreSQL connection strings use the `postgres://` dialect prefix by def
 Render free-tier PostgreSQL instances drop idle client sockets after periods of inactivity. To prevent `SSL SYSCALL error: EOF detected` or dead connection errors, the engine is initialized with:
 - `pool_pre_ping=True`: Verifies connection liveness before every checkout.
 - `pool_recycle=300`: Refreshes connections every 5 minutes.
-- `pool_size=10`: Base connection pool capacity.
-- `max_overflow=20`: Burst connection buffer.
+- `pool_size=5`: Conservative base connection pool capacity for Render free tier.
+- `max_overflow=5`: Burst connection headroom within database limits.
+- `pool_timeout=30`: Max wait time for connection checkout.
 
 ### 4.3 Database Initialization & Schema Migrations
 - **Cold-Start Provisioning:** The FastAPI `lifespan` handler automatically invokes `init_db()` upon application startup, executing `Base.metadata.create_all(bind=engine)`. Tables (`analysis_reports` and `benchmark_runs`) are created automatically if they do not exist.
@@ -173,7 +177,7 @@ Render will display the Blueprint plan with the 3 resources:
 Click **Apply**. Render will concurrently provision:
 1. `linkintel-db` (PostgreSQL instance).
 2. `linkintel-api` (Python container running `pip install -r requirements.txt`).
-3. `linkintel-frontend` (Node.js container running `npm install && npm run build`).
+3. `linkintel-frontend` (Node.js container running `corepack enable && pnpm install --frozen-lockfile && pnpm run build`).
 
 ### Step 6: Cross-Link Public URLs
 Once Render assigns the permanent `.onrender.com` hostnames:

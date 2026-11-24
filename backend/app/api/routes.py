@@ -3,8 +3,9 @@
 import time
 import uuid
 import threading
+import ipaddress
 from collections import defaultdict
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Sequence
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
@@ -29,24 +30,58 @@ extractor = WebsiteExtractor()
 analyzer = AnalysisService()
 
 
+def is_trusted_proxy_ip(peer_ip: str, trusted_list: Sequence[str]) -> bool:
+    """
+    Evaluates whether peer_ip matches any configured trusted proxy IP or CIDR network.
+    Also honors localhost loopback aliases and testclient.
+    """
+    if not peer_ip:
+        return False
+    clean_peer = peer_ip.strip().lower()
+    if clean_peer in ("localhost", "testclient"):
+        return True
+    try:
+        peer_addr = ipaddress.ip_address(clean_peer)
+    except ValueError:
+        return False
+
+    for item in trusted_list:
+        clean_item = item.strip().lower()
+        if not clean_item:
+            continue
+        if clean_item in ("localhost", "testclient"):
+            if peer_addr.is_loopback:
+                return True
+            continue
+        try:
+            net = ipaddress.ip_network(clean_item, strict=False)
+            if peer_addr in net:
+                return True
+        except ValueError:
+            continue
+    return False
+
+
 def get_client_ip(request: Request) -> str:
     """
-    Extracts client IP safely.
-    Only trusts X-Forwarded-For if the direct peer is a configured trusted reverse proxy.
+    Safely resolves client IP address.
+    Only trusts X-Forwarded-For if the direct TCP peer belongs to a configured
+    trusted reverse proxy IP or CIDR network.
+    Validates that the candidate client address is a syntactically valid IP address.
     """
     peer_ip = request.client.host if request.client else "127.0.0.1"
     trusted = settings.parsed_trusted_proxies
-    # TestClient in pytest sets peer_ip to "testclient"
-    is_trusted_peer = (
-        peer_ip.lower() in trusted or
-        peer_ip in ("127.0.0.1", "::1", "localhost", "testclient")
-    )
-    if is_trusted_peer:
+
+    if is_trusted_proxy_ip(peer_ip, trusted):
         forwarded = request.headers.get("x-forwarded-for") or request.headers.get("X-Forwarded-For")
         if forwarded:
             candidate = forwarded.split(",")[0].strip()
             if candidate:
-                return candidate
+                try:
+                    ipaddress.ip_address(candidate)
+                    return candidate
+                except ValueError:
+                    pass
     return peer_ip
 
 
@@ -128,7 +163,8 @@ async def readiness_check() -> dict:
     elif settings.llm_provider == "mock":
         key_present = True
 
-    db_healthy = check_db_health()
+    is_sqlite_prod = settings.app_env.lower() in ("production", "prod") and engine.dialect.name == "sqlite"
+    db_healthy = check_db_health() and not is_sqlite_prod
     is_ready = key_present and db_healthy
 
     return {
@@ -287,10 +323,10 @@ async def analyze_link(
             status_code=status.HTTP_400_BAD_REQUEST,
             content={
                 "success": False,
-                "detail": f"Security policy blocked request: {e}",
+                "detail": "Security policy blocked request: submitted address resolves to a restricted or invalid network.",
                 "error": {
                     "code": "SECURITY_POLICY_VIOLATION",
-                    "message": f"Security policy blocked request: {e}",
+                    "message": "The requested URL violates security policies (private IP or restricted network).",
                 },
                 "request_id": request_id,
             },
@@ -301,10 +337,10 @@ async def analyze_link(
             status_code=status.HTTP_502_BAD_GATEWAY,
             content={
                 "success": False,
-                "detail": f"Could not safely fetch website content: {e}",
+                "detail": "Could not safely fetch website content: target host unreachable or request timed out.",
                 "error": {
                     "code": "FETCH_FAILED",
-                    "message": f"Could not safely fetch website content: {e}",
+                    "message": "Could not safely fetch website content from target server.",
                 },
                 "request_id": request_id,
             },
@@ -401,10 +437,10 @@ async def analyze_link(
             status_code=status.HTTP_502_BAD_GATEWAY,
             content={
                 "success": False,
-                "detail": f"Failed to generate website intelligence: {e}",
+                "detail": "Failed to synthesize website intelligence. Please verify model provider availability or retry.",
                 "error": {
                     "code": "AI_SYNTHESIS_FAILED",
-                    "message": f"Failed to generate website intelligence: {e}",
+                    "message": "Failed to synthesize website intelligence.",
                 },
                 "request_id": request_id,
             },
