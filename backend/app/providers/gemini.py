@@ -20,6 +20,20 @@ T = TypeVar("T", bound=BaseModel)
 logger = logging.getLogger("linkintel.gemini")
 
 
+def extract_json_payload(raw_text: str) -> str:
+    """Strips markdown code blocks (```json ... ```) or surrounding whitespace to extract raw JSON."""
+    if not raw_text:
+        return ""
+    text = raw_text.strip()
+    if text.startswith("```"):
+        first_line_end = text.find("\n")
+        if first_line_end != -1:
+            text = text[first_line_end + 1 :]
+        if text.endswith("```"):
+            text = text[:-3]
+    return text.strip()
+
+
 class GeminiProvider(BaseLLMProvider):
     """
     Adapter for Google Gemini models (gemini-2.5-flash, gemini-1.5-flash).
@@ -76,7 +90,8 @@ class GeminiProvider(BaseLLMProvider):
                     out_tokens = getattr(response.usage_metadata, "candidates_token_count", None)
 
                 raw_text = response.text or ""
-                if not raw_text.strip():
+                clean_json_str = extract_json_payload(raw_text)
+                if not clean_json_str:
                     return LLMResult(
                         data=None,
                         provider="gemini",
@@ -87,53 +102,49 @@ class GeminiProvider(BaseLLMProvider):
                     )
 
                 try:
-                    parsed_dict = json.loads(raw_text)
+                    parsed_dict = json.loads(clean_json_str)
                 except json.JSONDecodeError as e:
-                    return LLMResult(
-                        data=None,
-                        provider="gemini",
-                        model=self.model_name,
-                        latency_seconds=latency,
-                        raw_response=raw_text,
-                        error_code="AI_INVALID_RESPONSE",
-                        error=f"Model response was not valid JSON: {e}",
-                    )
+                    logger.warning(f"SDK response JSON parse error: {e}. Attempting REST fallback...")
+                    # Fall through to REST fallback if JSON decode fails
+                    parsed_dict = None
 
-                try:
-                    validated_obj = response_schema.model_validate(parsed_dict)
-                    return LLMResult(
-                        data=validated_obj,
-                        provider="gemini",
-                        model=self.model_name,
-                        input_tokens=in_tokens,
-                        output_tokens=out_tokens,
-                        latency_seconds=latency,
-                        raw_response=raw_text,
-                    )
-                except ValidationError as e:
-                    return LLMResult(
-                        data=None,
-                        provider="gemini",
-                        model=self.model_name,
-                        latency_seconds=latency,
-                        raw_response=raw_text,
-                        error_code="AI_SCHEMA_VALIDATION_FAILED",
-                        error=f"Structured schema validation failed: {e}",
-                    )
+                if parsed_dict is not None:
+                    try:
+                        validated_obj = response_schema.model_validate(parsed_dict)
+                        return LLMResult(
+                            data=validated_obj,
+                            provider="gemini",
+                            model=self.model_name,
+                            input_tokens=in_tokens,
+                            output_tokens=out_tokens,
+                            latency_seconds=latency,
+                            raw_response=raw_text,
+                        )
+                    except ValidationError as e:
+                        return LLMResult(
+                            data=None,
+                            provider="gemini",
+                            model=self.model_name,
+                            latency_seconds=latency,
+                            raw_response=raw_text,
+                            error_code="AI_SCHEMA_VALIDATION_FAILED",
+                            error=f"Structured schema validation failed: {e}",
+                        )
 
             except Exception as e:
-                err_str = str(e)
-                latency = time.perf_counter() - start_time
-                error_code, clean_msg = self._classify_error(err_str)
-                logger.error(f"Gemini SDK execution failed [{error_code}]: {clean_msg}")
-                return LLMResult(
-                    data=None,
-                    provider="gemini",
-                    model=self.model_name,
-                    latency_seconds=latency,
-                    error_code=error_code,
-                    error=clean_msg,
-                )
+                error_code, clean_msg = self._classify_error(e)
+                logger.warning(f"Gemini SDK execution failed [{error_code}]: {clean_msg}. Attempting REST fallback...")
+                if error_code == "AI_PROVIDER_AUTH_FAILED":
+                    latency = time.perf_counter() - start_time
+                    return LLMResult(
+                        data=None,
+                        provider="gemini",
+                        model=self.model_name,
+                        latency_seconds=latency,
+                        error_code=error_code,
+                        error=clean_msg,
+                    )
+                # For non-auth SDK exceptions, proceed to REST fallback
 
         # 3. Header-authenticated REST Fallback (Never API key in URL!)
         return await self._analyze_via_rest(system_prompt, user_prompt, response_schema, start_time)
@@ -144,37 +155,58 @@ class GeminiProvider(BaseLLMProvider):
         user_prompt: str,
         response_schema: Type[T],
         start_time: float,
+        model_override: Optional[str] = None,
     ) -> LLMResult[T]:
-        endpoint = f"https://generativelanguage.googleapis.com/v1beta/models/{self.model_name}:generateContent"
+        active_model = model_override or self.model_name
+        endpoint = f"https://generativelanguage.googleapis.com/v1beta/models/{active_model}:generateContent"
         headers = {
             "Content-Type": "application/json",
             "x-goog-api-key": self.api_key,  # Secure header auth
         }
 
-        payload = {
-            "contents": [
-                {
-                    "role": "user",
-                    "parts": [{"text": f"System Directive:\n{system_prompt}\n\nTask and Input:\n{user_prompt}"}],
-                }
-            ],
-            "generationConfig": {
-                "response_mime_type": "application/json",
-                "temperature": 0.15,
-            },
+        generation_config = {
+            "response_mime_type": "application/json",
+            "temperature": 0.15,
         }
 
         try:
-            async with httpx.AsyncClient(timeout=45.0) as client:
+            # Pass schema to REST generationConfig
+            schema_dict = response_schema.model_json_schema()
+            generation_config["response_schema"] = schema_dict
+        except Exception as e:
+            logger.debug(f"Could not convert response_schema to json_schema: {e}")
+
+        payload = {
+            "system_instruction": {
+                "parts": [{"text": system_prompt}]
+            },
+            "contents": [
+                {
+                    "role": "user",
+                    "parts": [{"text": user_prompt}],
+                }
+            ],
+            "generationConfig": generation_config,
+        }
+
+        try:
+            async with httpx.AsyncClient(timeout=60.0) as client:
                 response = await client.post(endpoint, headers=headers, json=payload)
                 latency = time.perf_counter() - start_time
 
                 if response.status_code != 200:
+                    # If primary model is unavailable (404/503), try fallback to gemini-1.5-flash
+                    if response.status_code in (404, 503) and active_model != "gemini-1.5-flash":
+                        logger.warning(f"Model {active_model} returned {response.status_code}. Retrying with gemini-1.5-flash fallback...")
+                        return await self._analyze_via_rest(
+                            system_prompt, user_prompt, response_schema, start_time, model_override="gemini-1.5-flash"
+                        )
+
                     error_code, clean_msg = self._classify_http_error(response.status_code, response.text)
                     return LLMResult(
                         data=None,
                         provider="gemini",
-                        model=self.model_name,
+                        model=active_model,
                         latency_seconds=latency,
                         error_code=error_code,
                         error=clean_msg,
@@ -190,7 +222,7 @@ class GeminiProvider(BaseLLMProvider):
                     return LLMResult(
                         data=None,
                         provider="gemini",
-                        model=self.model_name,
+                        model=active_model,
                         latency_seconds=latency,
                         error_code="AI_INVALID_RESPONSE",
                         error="Gemini returned no candidate outputs.",
@@ -201,62 +233,112 @@ class GeminiProvider(BaseLLMProvider):
                     return LLMResult(
                         data=None,
                         provider="gemini",
-                        model=self.model_name,
+                        model=active_model,
                         latency_seconds=latency,
                         error_code="AI_INVALID_RESPONSE",
                         error="Candidate output contained empty parts.",
                     )
 
                 raw_text = content_parts[0].get("text", "").strip()
-                parsed_dict = json.loads(raw_text)
-                validated_obj = response_schema.model_validate(parsed_dict)
+                clean_json_str = extract_json_payload(raw_text)
 
-                return LLMResult(
-                    data=validated_obj,
-                    provider="gemini",
-                    model=self.model_name,
-                    input_tokens=in_tokens,
-                    output_tokens=out_tokens,
-                    latency_seconds=latency,
-                    raw_response=raw_text,
-                )
+                try:
+                    parsed_dict = json.loads(clean_json_str)
+                except json.JSONDecodeError as e:
+                    return LLMResult(
+                        data=None,
+                        provider="gemini",
+                        model=active_model,
+                        latency_seconds=latency,
+                        raw_response=raw_text,
+                        error_code="AI_INVALID_RESPONSE",
+                        error=f"Model response was not valid JSON: {e}",
+                    )
+
+                try:
+                    validated_obj = response_schema.model_validate(parsed_dict)
+                    return LLMResult(
+                        data=validated_obj,
+                        provider="gemini",
+                        model=active_model,
+                        input_tokens=in_tokens,
+                        output_tokens=out_tokens,
+                        latency_seconds=latency,
+                        raw_response=raw_text,
+                    )
+                except ValidationError as e:
+                    return LLMResult(
+                        data=None,
+                        provider="gemini",
+                        model=active_model,
+                        latency_seconds=latency,
+                        raw_response=raw_text,
+                        error_code="AI_SCHEMA_VALIDATION_FAILED",
+                        error=f"Structured schema validation failed: {e}",
+                    )
 
         except (httpx.ConnectTimeout, httpx.ReadTimeout, httpx.WriteTimeout, httpx.PoolTimeout):
             latency = time.perf_counter() - start_time
             return LLMResult(
                 data=None,
                 provider="gemini",
-                model=self.model_name,
+                model=active_model,
                 latency_seconds=latency,
                 error_code="AI_PROVIDER_TIMEOUT",
-                error=f"Gemini request timed out while communicating with upstream service.",
+                error="Gemini request timed out while communicating with upstream service.",
             )
         except Exception as e:
             latency = time.perf_counter() - start_time
-            error_code, clean_msg = self._classify_error(str(e))
+            error_code, clean_msg = self._classify_error(e)
             return LLMResult(
                 data=None,
                 provider="gemini",
-                model=self.model_name,
+                model=active_model,
                 latency_seconds=latency,
                 error_code=error_code,
                 error=clean_msg,
             )
 
-    def _classify_error(self, err_msg: str) -> tuple[str, str]:
+    def _classify_error(self, exc: Exception | str) -> tuple[str, str]:
         """Classifies SDK exception messages into structured error codes without leaking secrets."""
+        err_msg = str(exc)
+        code = getattr(exc, "code", None)
+        status = getattr(exc, "status", None)
         low = err_msg.lower()
-        if "api_key_invalid" in low or "unauthenticated" in low or "invalid api key" in low or "401" in low or "403" in low:
+
+        # Sanitize error message to prevent secret exposure
+        clean_diagnostic = err_msg.replace(self.api_key, "[REDACTED]") if self.api_key else err_msg
+        clean_diagnostic = clean_diagnostic[:250].strip()
+
+        # Auth failure (401, 403, UNAUTHENTICATED, PERMISSION_DENIED)
+        if code in (401, 403) or status in ("UNAUTHENTICATED", "PERMISSION_DENIED") or any(
+            x in low for x in ("api_key_invalid", "unauthenticated", "invalid api key", "permission_denied")
+        ):
             return "AI_PROVIDER_AUTH_FAILED", "Authentication failed. The configured GEMINI_API_KEY is invalid or unauthorized."
-        if "resource_exhausted" in low or "quota" in low:
-            return "AI_PROVIDER_QUOTA_EXCEEDED", "Gemini API quota exceeded for the configured project/key."
-        if "rate limit" in low or "429" in low:
+
+        # Quota / Rate limit (429, RESOURCE_EXHAUSTED)
+        if code == 429 or status == "RESOURCE_EXHAUSTED" or "quota" in low or "resource_exhausted" in low or "rate limit" in low:
+            if "quota" in low or "exhausted" in low:
+                return "AI_PROVIDER_QUOTA_EXCEEDED", "Gemini API quota exceeded for the configured project/key."
             return "AI_PROVIDER_RATE_LIMITED", "Gemini API rate limit reached. Please retry after a brief delay."
-        if "not_found" in low or "model not found" in low or "404" in low:
+
+        # Model unavailable / Not found (404, 503)
+        if code in (404, 503) or status in ("NOT_FOUND", "UNAVAILABLE") or any(
+            x in low for x in ("not_found", "model not found", "is not supported for generatecontent", "unavailable", "overloaded")
+        ):
             return "AI_MODEL_UNAVAILABLE", f"Model '{self.model_name}' is unavailable or not recognized."
-        if "deadline" in low or "timed out" in low or "timeout" in low:
+
+        # Timeout
+        if any(x in low for x in ("deadline", "timed out", "timeout")):
             return "AI_PROVIDER_TIMEOUT", "Upstream Gemini request timed out."
-        return "AI_PROVIDER_ERROR", "An upstream error occurred during AI intelligence synthesis."
+
+        # Schema / Validation error
+        if isinstance(exc, ValidationError) or "validationerror" in low or "validation error" in low:
+            return "AI_SCHEMA_VALIDATION_FAILED", f"Structured schema validation failed: {clean_diagnostic}"
+        if isinstance(exc, json.JSONDecodeError) or "jsondecodeerror" in low:
+            return "AI_INVALID_RESPONSE", f"Model response was not valid JSON: {clean_diagnostic}"
+
+        return "AI_PROVIDER_ERROR", f"An upstream error occurred during AI intelligence synthesis: {clean_diagnostic}"
 
     def _classify_http_error(self, status_code: int, response_text: str) -> tuple[str, str]:
         """Classifies REST HTTP error responses."""

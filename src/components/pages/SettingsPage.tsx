@@ -242,8 +242,8 @@ export function SettingsPage() {
               </div>
               <p className="text-xs text-[#454655] leading-relaxed">
                 Connected to active FastAPI backend (Port 4000) and live LLM endpoints. Dispatches
-                real Playwright Chromium instances for deep web scraping, structured JSON
-                extraction, and dynamic multi-model reasoning.
+                HTTPX and Trafilatura engines for fast, secure web extraction, structured JSON
+                synthesis, and dynamic multi-model reasoning.
               </p>
             </div>
             <div className="flex items-center gap-2 pt-2 border-t border-[#DFE0FF] text-[11px] font-mono text-[#757687]">

@@ -604,7 +604,7 @@ export function OverviewPage() {
                   Search &amp; Extraction Engine Worker
                 </div>
                 <div className="text-xs text-[#454655]">
-                  Playwright Headless + BeautifulSoup4 Sanitizer (Safe Fetcher Active)
+                  HTTPX + Trafilatura + BeautifulSoup4 Sanitizer (Safe Fetcher Active)
                 </div>
               </div>
             </div>

@@ -132,6 +132,7 @@ export interface HistoryEntry {
   analyzedAt: string;
   status: "completed" | "failed";
   sample: boolean;
+  modelUsed?: string;
 }
 
 export interface AppPreferences {

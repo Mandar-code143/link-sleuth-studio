@@ -22,8 +22,8 @@ PUBLISHED_PRICING: Dict[str, ModelPricing] = {
     "gemini-2.5-flash": ModelPricing(
         provider="gemini",
         model="gemini-2.5-flash",
-        input_rate_per_million=0.15,
-        output_rate_per_million=0.60,
+        input_rate_per_million=0.30,
+        output_rate_per_million=2.50,
         effective_date="2026-11-20",
         pricing_source="https://ai.google.dev/gemini-api/docs/pricing",
         verification_date="November 2026",

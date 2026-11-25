@@ -3,6 +3,9 @@
 #   1. linkintel-frontend (Node.js SSR web service using TanStack Start & Nitro render_com preset)
 #   2. linkintel-api (Python FastAPI web service with Uvicorn, hardened SSRF protection & LLM integration)
 #   3. linkintel-db (Render PostgreSQL managed database with connection pooling)
+# Note on Deployment Region:
+#   The Render Blueprint default is 'oregon' (US West).
+#   For production instances deployed in Ohio (US East / us-east), set region: ohio across all services.
 
 services:
   # =========================================================================

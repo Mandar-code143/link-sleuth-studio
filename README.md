@@ -6,7 +6,7 @@
 [![TypeScript](https://img.shields.io/badge/Language-TypeScript_5.8-3178C6.svg?logo=typescript&logoColor=white)](https://www.typescriptlang.org)
 [![Vite](https://img.shields.io/badge/Bundler-Vite_8-646CFF.svg?logo=vite&logoColor=white)](https://vitejs.dev)
 [![Tailwind CSS v4](https://img.shields.io/badge/Styling-Tailwind_v4-38B2AC.svg?logo=tailwind-css&logoColor=white)](https://tailwindcss.com)
-[![Tests](<https://img.shields.io/badge/Tests-88_Passed_(71_Pytest_+_17_Vitest)-brightgreen.svg>)](<>)
+[![Tests](<https://img.shields.io/badge/Tests-98_Passed_(81_Pytest_+_17_Vitest)-brightgreen.svg>)](<>)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 > **LinkIntel AI** is an AI-powered website intelligence platform that ingests public business websites and transforms live web content into structured competitive intelligence, high-intent search queries, technical SEO audits, core service breakdowns, and buyer persona profiles.
@@ -437,7 +437,7 @@ Full whitepaper: [`backend/docs/llm-research.md`](backend/docs/llm-research.md)
 ## 15. Test Execution Commands
 
 ```bash
-# 1. Run all Backend Pytest Tests (71 tests):
+# 1. Run all Backend Pytest Tests (81 tests):
 python -m pytest backend/tests -v
 
 # 2. Run Frontend Vitest Tests (17 tests):
@@ -459,12 +459,12 @@ npm run build
 
 | Test Suite                             | Total Tests             | Passed                          | Failed | Execution Time     |
 | -------------------------------------- | ----------------------- | ------------------------------- | ------ | ------------------ |
-| **Backend Pytest** (`backend/tests/`)  | **71**                  | **71**                          | 0      | 22.65s             |
-| **Frontend Vitest** (`src/test/`)      | **17**                  | **17**                          | 0      | 3.44s              |
-| **TypeScript Validation** (`tsc`)      | **Clean**               | **0 errors**                    | 0      | 3.5s               |
-| **ESLint** (`eslint .`)                | **Clean**               | **0 errors**                    | 0      | 4.2s               |
+| **Backend Pytest** (`backend/tests/`)  | **81**                  | **81**                          | 0      | 1.83s              |
+| **Frontend Vitest** (`src/test/`)      | **17**                  | **17**                          | 0      | 2.91s              |
+| **TypeScript Validation** (`tsc`)      | **Clean**               | **0 errors**                    | 0      | 3.1s               |
+| **ESLint** (`eslint .`)                | **Clean**               | **0 errors**                    | 0      | 3.8s               |
 | **Production Build** (`npm run build`) | **Client, SSR & Nitro** | **Compiled cleanly (0 errors)** | 0      | 2.85s              |
-| **Total Automated Tests**              | **88**                  | **88**                          | **0**  | **100% Pass Rate** |
+| **Total Automated Tests**              | **98**                  | **98**                          | **0**  | **100% Pass Rate** |
 
 ---
 
@@ -507,20 +507,27 @@ http://127.0.0.1:4000/redoc
 
 ---
 
-## 19. Deployment Instructions (Render Blueprint)
+## 19. Production Deployment & Live Service URLs
 
-The entire production stack deploys to **Render** via a single Infrastructure-as-Code Blueprint (`render.yaml`):
+The LinkIntel AI production stack is deployed and live on **Render**:
 
-1. **Push Branch:** Push `deployment-ready` to GitHub (`git push origin deployment-ready`).
-2. **Open Render:** Go to [dashboard.render.com](https://dashboard.render.com) and click **New +** → **Blueprint**.
-3. **Connect Repository:** Select `Mandar-code143/link-sleuth-studio` and branch `deployment-ready`.
-4. **Configure Secrets:** Enter your `GEMINI_API_KEY`, `VITE_API_BASE_URL` (public backend URL), and `FRONTEND_ORIGINS` (public frontend URL).
-5. **Apply Blueprint:** Render provisions:
-   - `linkintel-frontend` (Node.js SSR Web Service on Nitro `render-com` preset).
-   - `linkintel-api` (Python FastAPI Web Service on Uvicorn).
-   - `linkintel-db` (Render PostgreSQL managed database with automatic connection pooling).
+| Component | Production URL | Description |
+|---|---|---|
+| **Live Frontend App** | [https://link-sleuth-studio.onrender.com](https://link-sleuth-studio.onrender.com) | TanStack Start + Nitro SSR Web Interface |
+| **Live Backend API** | [https://linkintel-api-4dvd.onrender.com](https://linkintel-api-4dvd.onrender.com) | FastAPI 0.115 Engine (Uvicorn) |
+| **API Health Check** | [https://linkintel-api-4dvd.onrender.com/health](https://linkintel-api-4dvd.onrender.com/health) | Readiness & Liveness JSON status |
+| **Interactive API Docs** | [https://linkintel-api-4dvd.onrender.com/docs](https://linkintel-api-4dvd.onrender.com/docs) | Swagger UI for live interactive testing |
+| **Managed Database** | Render PostgreSQL (`linkintel-db`) | Ohio (`us-east`) multi-tenant persistence |
 
-Complete step-by-step launch & cross-linking guide: [`docs/deployment.md`](docs/deployment.md)
+### Blueprint Deployment (`render.yaml`)
+
+The entire production stack can also be provisioned on another Render account via the root Blueprint:
+
+1. **Connect Repository:** Select `Mandar-code143/link-sleuth-studio` on [Render Blueprints](https://dashboard.render.com).
+2. **Configure Secrets:** Enter `GEMINI_API_KEY`, `VITE_API_BASE_URL`, and `FRONTEND_ORIGINS`.
+3. **Apply Blueprint:** Render provisions `linkintel-frontend`, `linkintel-api`, and `linkintel-db`.
+
+Complete step-by-step launch & troubleshooting guide: [`docs/deployment.md`](docs/deployment.md)
 
 ---
 

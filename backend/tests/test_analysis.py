@@ -145,15 +145,15 @@ def test_link_analysis_response_schema_validation():
 
 
 def test_cost_service_calculation():
-    # Gemini 2.5 Flash: $0.15 / 1M input, $0.60 / 1M output (November 2026 verified)
+    # Gemini 2.5 Flash: $0.30 / 1M input, $2.50 / 1M output (November 2026 verified)
     cost_gemini = calculate_analysis_cost(
         model_name="gemini-2.5-flash",
         input_tokens=10_000,
         output_tokens=2_000,
     )
     assert cost_gemini.is_measured is True
-    # (10000 / 1M * 0.15) = 0.0015, (2000 / 1M * 0.60) = 0.0012 -> total = 0.0027
-    assert cost_gemini.total_cost_usd == pytest.approx(0.0027, rel=1e-3)
+    # (10000 / 1M * 0.30) = 0.0030, (2000 / 1M * 2.50) = 0.0050 -> total = 0.0080
+    assert cost_gemini.total_cost_usd == pytest.approx(0.0080, rel=1e-3)
 
     # OpenAI GPT-4o-mini: $0.15 / 1M input, $0.60 / 1M output
     cost_openai = calculate_analysis_cost(
