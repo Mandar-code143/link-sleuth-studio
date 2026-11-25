@@ -87,11 +87,11 @@ class CompetitorResearchService:
 
         try:
             if self.search_provider == "brave" and self.api_key:
-                return await self._search_brave(search_query, clean_brand, submitted_domain)
+                return await self._search_brave(search_query, clean_brand, submitted_domain, clean_cat)
             elif self.search_provider == "tavily" and self.api_key:
-                return await self._search_tavily(search_query, clean_brand, submitted_domain)
+                return await self._search_tavily(search_query, clean_brand, submitted_domain, clean_cat)
             elif self.search_provider in ("duckduckgo", "ddg", ""):
-                return await self._search_duckduckgo(search_query, clean_brand, submitted_domain)
+                return await self._search_duckduckgo(search_query, clean_brand, submitted_domain, clean_cat)
         except Exception as e:
             logger.warning(f"Live competitor search failed ({self.search_provider}): {e}. Continuing with inferred analysis.")
 
@@ -153,6 +153,8 @@ class CompetitorResearchService:
 
         is_direct = any(term in snippet_lower or term in title_lower for term in clean_cat.split() if len(term) > 3)
         comp_type = "direct" if is_direct else "indirect"
+        evidence_provenance: Evidence = "verified" if is_direct else "inferred"
+        confidence_score = 0.85 if is_direct else 0.65
 
         # Observed strengths & gaps derived contextually without invented factual metrics
         observed_strengths = []
@@ -183,9 +185,9 @@ class CompetitorResearchService:
             gaps=observed_gaps,
             positioning=f"{comp_type.capitalize()} market peer to {brand_name.strip()} operating under domain {netloc}.",
             opportunity=f"Differentiate {brand_name.strip()} through specialized features, superior developer experience, and transparent pricing.",
-            evidence="verified",
+            evidence=evidence_provenance,
             source_urls=[target_url],
-            confidence=0.85,
+            confidence=confidence_score,
             competitor_type=comp_type,
         )
 
@@ -194,6 +196,7 @@ class CompetitorResearchService:
         query: str,
         brand_name: str,
         submitted_domain: str,
+        category: str = "",
     ) -> List[Competitor]:
         """Searches DuckDuckGo HTML endpoint without requiring third-party API keys."""
         url = "https://html.duckduckgo.com/html/"
@@ -237,7 +240,7 @@ class CompetitorResearchService:
                     snippet=snippet,
                     target_url=target_url,
                     brand_name=brand_name,
-                    category=brand_name,
+                    category=category or brand_name,
                     submitted_domain=submitted_domain,
                     seen_domains=seen_domains,
                 )
@@ -248,7 +251,13 @@ class CompetitorResearchService:
 
             return candidates
 
-    async def _search_brave(self, query: str, brand_name: str, submitted_domain: str) -> List[Competitor]:
+    async def _search_brave(
+        self,
+        query: str,
+        brand_name: str,
+        submitted_domain: str,
+        category: str = "",
+    ) -> List[Competitor]:
         """Queries Brave Search API."""
         url = "https://api.search.brave.com/res/v1/web/search"
         headers = {"X-Subscription-Token": self.api_key, "Accept": "application/json"}
@@ -274,7 +283,7 @@ class CompetitorResearchService:
                     snippet=snippet,
                     target_url=target_url,
                     brand_name=brand_name,
-                    category=brand_name,
+                    category=category or brand_name,
                     submitted_domain=submitted_domain,
                     seen_domains=seen_domains,
                 )
@@ -285,7 +294,13 @@ class CompetitorResearchService:
 
             return candidates
 
-    async def _search_tavily(self, query: str, brand_name: str, submitted_domain: str) -> List[Competitor]:
+    async def _search_tavily(
+        self,
+        query: str,
+        brand_name: str,
+        submitted_domain: str,
+        category: str = "",
+    ) -> List[Competitor]:
         """Queries Tavily AI Search API."""
         url = "https://api.tavily.com/search"
         payload = {"api_key": self.api_key, "query": query, "max_results": 10}
@@ -310,7 +325,7 @@ class CompetitorResearchService:
                     snippet=snippet,
                     target_url=target_url,
                     brand_name=brand_name,
-                    category=brand_name,
+                    category=category or brand_name,
                     submitted_domain=submitted_domain,
                     seen_domains=seen_domains,
                 )

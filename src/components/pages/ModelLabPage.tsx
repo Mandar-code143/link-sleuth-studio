@@ -220,10 +220,10 @@ export function ModelLabPage() {
               </span>
               <div className="flex items-center justify-between font-mono text-xs text-[#141B2C]">
                 <span>
-                  Input: <strong className="text-[#2538D0]">$0.075</strong> / 1M
+                  Input: <strong className="text-[#2538D0]">$0.30</strong> / 1M
                 </span>
                 <span>
-                  Output: <strong className="text-[#2538D0]">$0.30</strong> / 1M
+                  Output: <strong className="text-[#2538D0]">$2.50</strong> / 1M
                 </span>
               </div>
             </div>

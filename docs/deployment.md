@@ -232,3 +232,20 @@ Once Render assigns the permanent `.onrender.com` hostnames:
 - **Tenant Scoping vs User Authentication:** Workspace IDs (`X-Workspace-Id`) provide logical tenant scoping for database records and cache keys. They do not constitute cryptographically verified user authentication. In enterprise multi-user deployments, place an OAuth2 / OIDC proxy or JWT authentication layer in front of the API.
 - **Reverse Proxy IP Trust:** Rate limiting extracts client IPs from `X-Forwarded-For` only when the request peer is a recognized internal proxy (`10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`, `127.0.0.1`), defeating spoofed IP headers.
 - **SSRF Defense:** Outbound HTTP fetches validate IP addresses against IPv4/IPv6 private ranges, link-local, loopback, and cloud metadata endpoints (`169.254.169.254`) with DNS pinning.
+
+---
+
+## 8. Live Production Deployment Information
+
+The LinkIntel AI production stack is actively deployed and verified on Render:
+
+| Service / Resource | Render Resource Name | Public Live URL / Access | Region | Health Status |
+|---|---|---|---|---|
+| **Frontend SSR Web App** | `linkintel-frontend` | [https://link-sleuth-studio.onrender.com](https://link-sleuth-studio.onrender.com) | Ohio (`us-east`) | Active / Live |
+| **Backend FastAPI Engine** | `linkintel-api` | [https://linkintel-api-4dvd.onrender.com](https://linkintel-api-4dvd.onrender.com) | Ohio (`us-east`) | Active / Live |
+| **API Health Endpoint** | `linkintel-api` | [https://linkintel-api-4dvd.onrender.com/health](https://linkintel-api-4dvd.onrender.com/health) | Ohio (`us-east`) | `{"status":"ok"}` |
+| **Interactive Swagger UI** | `linkintel-api` | [https://linkintel-api-4dvd.onrender.com/docs](https://linkintel-api-4dvd.onrender.com/docs) | Ohio (`us-east`) | Active |
+| **Managed Database** | `linkintel-db` | Render PostgreSQL (Connection Pooling Enabled) | Ohio (`us-east`) | Connected |
+
+> **Note on Free-Tier Cold Starts:**
+> Render spins down free-tier web services after 15 minutes of inactivity. When visiting the live URLs after an idle period, allow 30–50 seconds for the initial container wake-up.

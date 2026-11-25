@@ -180,7 +180,8 @@ export function AnalyzePage() {
           <div className="flex items-center gap-2 self-start md:self-auto bg-[#F1F3FF] px-3.5 py-2 rounded-xl border border-[#DFE0FF] shadow-2xs">
             <ShieldCheck size={18} className="text-[#005A4A]" />
             <span className="text-xs font-medium text-[#141B2C]">
-              Headless Chromium Cluster <span className="text-[#005A4A] font-bold">Active</span>
+              HTTPX & Trafilatura Fast Engine{" "}
+              <span className="text-[#005A4A] font-bold">Active</span>
             </span>
           </div>
         </div>
@@ -526,7 +527,7 @@ export function AnalyzePage() {
                       Fetching public page structure via backend crawler
                     </div>
                     <div className="text-[11px] font-mono text-[#454655]">
-                      Playwright Headless — DOM elements extracted
+                      HTTPX & Trafilatura — DOM elements extracted
                     </div>
                   </div>
                 </div>

@@ -65,7 +65,8 @@ export function HistoryPage() {
           website: r.url || "",
           brand:
             r.brand_name ||
-            (r.url ? r.url.replace(/^https?:\/\//, "").split("/")[0] : "Target Brand"),
+            (r.url ? r.url.replace(/^https?:\/\//, "").split("/")[0] : "") ||
+            "Target Brand",
           category: r.category || "Technology",
           analyzedAt: r.created_at || new Date().toISOString(),
           modelUsed: r.model_used || "gemini-2.5-flash",
